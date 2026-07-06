@@ -474,13 +474,16 @@ const data = {
     { id: 'S009', name: 'Arjun Desai', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
     { id: 'S010', name: 'Divya Kulkarni', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
   ],
+  // verifiedSheets = answer sheets verified after Collection/Dispatch (In-Exam
+  // 4.5), available for Bundle Creation to draw from ("Fetch Verified Answer
+  // Sheets" step). Bundle Creation should not let you bundle more than this.
   subjects: [
-    { code: 'CS401', name: 'Data Structures & Algorithms', credits: 4 },
-    { code: 'CS402', name: 'Database Management Systems', credits: 4 },
-    { code: 'CS403', name: 'Operating Systems', credits: 3 },
-    { code: 'CS404', name: 'Computer Networks', credits: 3 },
-    { code: 'CS405', name: 'Software Engineering', credits: 3 },
-    { code: 'CS406', name: 'Mathematics IV', credits: 3 },
+    { code: 'CS401', name: 'Data Structures & Algorithms', credits: 4, verifiedSheets: 238 },
+    { code: 'CS402', name: 'Database Management Systems', credits: 4, verifiedSheets: 226 },
+    { code: 'CS403', name: 'Operating Systems', credits: 3, verifiedSheets: 231 },
+    { code: 'CS404', name: 'Computer Networks', credits: 3, verifiedSheets: 240 },
+    { code: 'CS405', name: 'Software Engineering', credits: 3, verifiedSheets: 219 },
+    { code: 'CS406', name: 'Mathematics IV', credits: 3, verifiedSheets: 205 },
   ],
   rooms: [
     { name: 'Lab 101', capacity: 30 },
@@ -510,12 +513,18 @@ const data = {
     { date: '18 Apr 2026', session: 'Morning', subject: 'Software Engineering', code: 'CS405', time: '10:00 - 12:00', duration: '2 hrs' },
     { date: '20 Apr 2026', session: 'Morning', subject: 'Mathematics IV', code: 'CS406', time: '10:00 - 13:00', duration: '3 hrs' },
   ],
+  // Unified bundle lifecycle shared by Bundle Creation, Evaluator Assignment,
+  // Marks Entry and Scrutiny — one bundle flows through all four pages:
+  // Unassigned -> Assigned (evaluator entering marks) -> Completed (submitted,
+  // awaiting scrutiny) -> scrutiny: Approved | back to Assigned if returned.
   bundles: [
-    { id: 'B-001', subject: 'DS & Algorithms', range: '1 - 25', evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning' },
-    { id: 'B-002', subject: 'DS & Algorithms', range: '26 - 50', evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning' },
-    { id: 'B-003', subject: 'DS & Algorithms', range: '51 - 75', evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning' },
-    { id: 'B-004', subject: 'DS & Algorithms', range: '76 - 100', evaluator: 'Dr. Meena Iyer', status: 'Assigned', statusClass: 'badge-info' },
-    { id: 'B-005', subject: 'DS & Algorithms', range: '101 - 125', evaluator: 'Prof. Amit Kumar', status: 'Completed', statusClass: 'badge-success' },
+    { id: 'B-001', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '1 - 25', sheets: 25, evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning', progress: 0, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0 },
+    { id: 'B-002', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '26 - 50', sheets: 25, evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning', progress: 0, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0 },
+    { id: 'B-003', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '51 - 75', sheets: 25, evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning', progress: 0, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0 },
+    { id: 'B-004', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '76 - 100', sheets: 25, evaluator: 'Dr. Meena Iyer', status: 'Assigned', statusClass: 'badge-info', progress: 40, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0 },
+    { id: 'B-005', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '101 - 125', sheets: 25, evaluator: 'Prof. Amit Kumar', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '11 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+    { id: 'B-006', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '126 - 150', sheets: 25, evaluator: 'Dr. Sunita Rao', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '13 Apr 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 2 },
+    { id: 'B-007', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '151 - 175', sheets: 25, evaluator: 'Prof. Rajesh Pillai', status: 'Assigned', statusClass: 'badge-info', progress: 20, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0 },
   ],
   revaluationApplications: [
     { student: 'Rahul Verma', subject: 'OS', marks: 38, feePaid: true, evaluator: '—', status: 'Pending', statusClass: 'badge-warning' },
@@ -768,28 +777,79 @@ function publishTimetable() {
   });
 }
 
-function openCreateBundleModal() {
-  const lastEnd = data.bundles.reduce((max, b) => {
+function openCreateBundleModal(subjectCode) {
+  const subject = data.subjects.find(s => s.code === subjectCode) || data.subjects[0];
+  const subjectBundles = data.bundles.filter(b => b.subjectCode === subject.code);
+  const lastEnd = subjectBundles.reduce((max, b) => {
     const end = Number(b.range.split(' - ')[1]);
     return isNaN(end) ? max : Math.max(max, end);
   }, 0);
+  const bundledSheets = subjectBundles.reduce((sum, b) => sum + (b.sheets || 0), 0);
+  const remaining = Math.max(0, subject.verifiedSheets - bundledSheets);
+  if (remaining === 0) {
+    showToast('All verified sheets for ' + subject.name + ' are already bundled');
+    return;
+  }
+  // Offer sane preset sizes that fit within what's remaining; only fall back
+  // to "bundle everything left" when remaining is smaller than the smallest
+  // preset (10) — never silently default to bundling all remaining sheets.
+  let sizeOptions = [10, 15, 20, 25].filter(n => n <= remaining);
+  if (sizeOptions.length === 0) sizeOptions = [remaining];
+  const defaultIdx = sizeOptions.length - 1;
   openFormModal('Create Bundle', `
     <div class="form-group"><label>Bundle Size</label>
       <select class="form-control" id="newBundleSize">
-        <option>10</option><option>15</option><option>20</option><option selected>25</option>
+        ${sizeOptions.map((n, i) => `<option ${i === defaultIdx ? 'selected' : ''}>${n}</option>`).join('')}
       </select>
     </div>
-    <p class="text-muted">Creating a new bundle for DS & Algorithms, starting from sheet ${lastEnd + 1}.</p>
+    <p class="text-muted">Creating a new bundle for ${subject.name} (${subject.code}), starting from sheet ${lastEnd + 1}. ${remaining} verified sheet(s) still available to bundle.</p>
   `, 'Create Bundle', function () {
     const size = parseInt(document.getElementById('newBundleSize').value, 10);
     const start = lastEnd + 1;
     const end = lastEnd + size;
     const nextNum = data.bundles.length + 1;
     const id = 'B-' + String(nextNum).padStart(3, '0');
-    data.bundles.push({ id, subject: 'DS & Algorithms', range: `${start} - ${end}`, evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning' });
+    data.bundles.push({
+      id, subjectCode: subject.code, subject: subject.name, range: `${start} - ${end}`, sheets: size,
+      evaluator: '—', status: 'Unassigned', statusClass: 'badge-warning',
+      progress: 0, submitted: null, scrutiny: null, scrutinyClass: '', errors: 0,
+    });
     closeModal();
     showPage('bundle');
     showToast('Bundle ' + id + ' created');
+  });
+}
+
+function openAssignEvaluatorModal(prefilledBundleId) {
+  const unassigned = data.bundles.filter(b => b.status === 'Unassigned');
+  if (unassigned.length === 0) {
+    showToast('No unassigned bundles available');
+    return;
+  }
+  openFormModal('Assign Evaluator', `
+    <div class="form-group"><label>Select Bundle</label>
+      <select class="form-control" id="assignBundleId">
+        ${unassigned.map(b => `<option value="${b.id}" ${b.id === prefilledBundleId ? 'selected' : ''}>${b.id} — ${b.subject} (${b.range})</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>Select Evaluator</label>
+      <select class="form-control" id="assignEvaluatorName">
+        ${data.faculty.map(f => `<option>${f.name}</option>`).join('')}
+      </select>
+    </div>
+  `, 'Assign', function () {
+    const bundleId = document.getElementById('assignBundleId').value;
+    const evaluator = document.getElementById('assignEvaluatorName').value;
+    const bundle = data.bundles.find(b => b.id === bundleId);
+    if (bundle) {
+      bundle.evaluator = evaluator;
+      bundle.status = 'Assigned';
+      bundle.statusClass = 'badge-info';
+      bundle.progress = 0;
+    }
+    closeModal();
+    showPage('evaluator');
+    showToast(evaluator + ' assigned to ' + bundleId);
   });
 }
 
@@ -1428,6 +1488,15 @@ function renderCollection() {
 // ============================================================
 // BUNDLE
 // ============================================================
+// Tracks which subject's bundles are currently shown — set by the subject
+// dropdown ("Select Exam and Subject" step), read by openCreateBundleModal.
+let bundleSelectedSubjectCode = data.subjects[0].code;
+
+function changeBundleSubject(code) {
+  bundleSelectedSubjectCode = code;
+  showPage('bundle');
+}
+
 function renderBundle() {
   if (currentMode === 'affiliated') {
     return renderAffiliatedNotApplicable('fa-layer-group', 'Bundle Creation Not Required', 'Under Affiliated mode, answer sheets are dispatched directly to the university for evaluation — no college-side bundling is needed.');
@@ -1435,30 +1504,34 @@ function renderBundle() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Create bundles for college-evaluated internal/practical answer sheets. External subjects go to the university.'
     : 'Create subject-wise answer sheet bundles for evaluation. (Autonomous mode)';
-  const totalSheets = data.bundles.reduce((sum, b) => {
-    const parts = b.range.split(' - ').map(Number);
-    return sum + (parts.length === 2 ? (parts[1] - parts[0] + 1) : 25);
-  }, 0);
-  const rows = data.bundles.map(b => {
+  const subject = data.subjects.find(s => s.code === bundleSelectedSubjectCode) || data.subjects[0];
+  const subjectBundles = data.bundles.filter(b => b.subjectCode === subject.code);
+  const bundledSheets = subjectBundles.reduce((sum, b) => sum + (b.sheets || 0), 0);
+  const remainingSheets = Math.max(0, subject.verifiedSheets - bundledSheets);
+  const rows = subjectBundles.map(b => {
     const action = b.status === 'Unassigned'
-      ? `<button class="btn btn-sm btn-primary" onclick="showPage('evaluator')">Assign</button>`
-      : `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id}','${b.range} sheets — evaluator: ${b.evaluator}. Status: ${b.status}.', {icon:'fa-layer-group', iconColor:'${b.status === 'Completed' ? 'var(--success)' : 'var(--primary)'}'})">View</button>`;
+      ? `<button class="btn btn-sm btn-primary" onclick="openAssignEvaluatorModal('${b.id}')">Assign</button>`
+      : `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id}','${b.range} sheets — evaluator: ${b.evaluator}. Status: ${b.status}${b.scrutiny ? '. Scrutiny: ' + b.scrutiny : ''}.', {icon:'fa-layer-group', iconColor:'${b.status === 'Completed' ? 'var(--success)' : 'var(--primary)'}'})">View</button>`;
     return `<tr><td>${b.id}</td><td>${b.subject}</td><td>${b.range}</td><td>${b.evaluator}</td><td><span class="badge ${b.statusClass}">${b.status}</span></td><td>${action}</td></tr>`;
   }).join('');
+  const subjectOptions = data.subjects.map(s => `<option value="${s.code}" ${s.code === subject.code ? 'selected' : ''}>${s.name} (${s.code})</option>`).join('');
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>DS & Algorithms (CS401)</option></select>
-        <button class="btn btn-primary btn-sm" onclick="openCreateBundleModal()"><i class="fas fa-plus"></i> Create Bundle</button>
+        <select class="form-control" onchange="changeBundleSubject(this.value)">${subjectOptions}</select>
+        <span class="chip"><i class="fas fa-check-circle" style="color:#059669"></i> ${subject.verifiedSheets} Verified Sheets</span>
+        <span class="chip"><i class="fas fa-layer-group"></i> ${bundledSheets} Bundled</span>
+        <span class="chip"><i class="fas fa-hourglass-half"></i> ${remainingSheets} Remaining</span>
+        <button class="btn btn-primary btn-sm" onclick="openCreateBundleModal('${subject.code}')" ${remainingSheets === 0 ? 'disabled title="All verified sheets for this subject are already bundled"' : ''}><i class="fas fa-plus"></i> Create Bundle</button>
       </div>
       <div class="card">
-        <div class="card-header"><h3><i class="fas fa-layer-group"></i> Answer Sheet Bundles</h3><span class="text-muted">${data.bundles.length} bundles · ${totalSheets} sheets</span></div>
+        <div class="card-header"><h3><i class="fas fa-layer-group"></i> Answer Sheet Bundles — ${subject.name}</h3><span class="text-muted">${subjectBundles.length} bundle(s) · ${bundledSheets} sheets</span></div>
         <div class="card-body">
           <div class="table-wrap">
             <table>
               <tr><th>Bundle #</th><th>Subject</th><th>Answer Sheets</th><th>Evaluator</th><th>Status</th><th></th></tr>
-              ${rows}
+              ${rows || '<tr><td colspan="6" class="text-center text-muted" style="padding:20px">No bundles created yet for this subject.</td></tr>'}
             </table>
           </div>
         </div>
@@ -1470,6 +1543,13 @@ function renderBundle() {
 // ============================================================
 // EVALUATOR
 // ============================================================
+let evaluatorSelectedSubjectCode = 'all';
+
+function changeEvaluatorSubject(code) {
+  evaluatorSelectedSubjectCode = code;
+  showPage('evaluator');
+}
+
 function renderEvaluator() {
   if (currentMode === 'affiliated') {
     return renderAffiliatedNotApplicable('fa-chalkboard-teacher', 'Evaluator Assignment Not Required', 'External evaluation is carried out by the university under Affiliated mode.');
@@ -1477,12 +1557,27 @@ function renderEvaluator() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Assign college evaluators for internal/practical bundles only.'
     : 'Assign answer sheet bundles to evaluators. Track assignment status.';
+  const bundlesInScope = evaluatorSelectedSubjectCode === 'all'
+    ? data.bundles
+    : data.bundles.filter(b => b.subjectCode === evaluatorSelectedSubjectCode);
+  const unassignedCount = bundlesInScope.filter(b => b.status === 'Unassigned').length;
+  const assignedBundles = bundlesInScope.filter(b => b.evaluator !== '—');
+  const rows = assignedBundles.map(b => {
+    const barClass = b.status === 'Completed' ? 'progress-bar success' : 'progress-bar';
+    const action = b.status === 'Completed'
+      ? `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id}','All ${b.sheets} answer sheets evaluated by ${b.evaluator}. Marks submitted for scrutiny${b.scrutiny ? ' — ' + b.scrutiny : ''}.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button>`
+      : `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id} Progress','${b.evaluator} has evaluated ${Math.round(b.sheets * b.progress / 100)} of ${b.sheets} answer sheets so far (${b.progress}% complete).', {icon:'fa-chart-line'})">Track</button>`;
+    return `<tr><td>${b.evaluator}</td><td>${b.id}</td><td>${b.subject}</td><td>${b.sheets}</td><td><span class="badge ${b.statusClass}">${b.status}</span></td><td><div class="progress" style="width:120px"><div class="${barClass}" style="width:${b.progress}%"></div></div></td><td>${action}</td></tr>`;
+  }).join('');
+  const subjectOptions = ['<option value="all">All Subjects</option>']
+    .concat(data.subjects.map(s => `<option value="${s.code}" ${s.code === evaluatorSelectedSubjectCode ? 'selected' : ''}>${s.name} (${s.code})</option>`))
+    .join('');
   return `
     <div class="page-content">
-      <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
+      <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}${unassignedCount ? ` ${unassignedCount} bundle(s) still unassigned.` : ''}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>DS & Algorithms (CS401)</option></select>
-        <button class="btn btn-primary btn-sm" onclick="openModal('Assign Evaluator','<div class=\\'form-group\\'><label>Select Bundle</label><select class=\\'form-control\\'><option>B-001 (1 - 25)</option><option>B-002 (26 - 50)</option><option>B-003 (51 - 75)</option></select></div><div class=\\'form-group\\'><label>Select Evaluator</label><select class=\\'form-control\\'><option>Dr. Meena Iyer</option><option>Prof. Amit Kumar</option><option>Dr. Sunita Rao</option><option>Prof. Rajesh Pillai</option><option>Dr. Neha Shah</option></select></div>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'>Assign</button>')"><i class="fas fa-user-plus"></i> Assign Evaluator</button>
+        <select class="form-control" onchange="changeEvaluatorSubject(this.value)">${subjectOptions}</select>
+        <button class="btn btn-primary btn-sm" onclick="openAssignEvaluatorModal()" ${unassignedCount ? '' : 'disabled title="No unassigned bundles"'}><i class="fas fa-user-plus"></i> Assign Evaluator</button>
       </div>
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-chalkboard-teacher"></i> Evaluator Assignment</h3></div>
@@ -1490,10 +1585,7 @@ function renderEvaluator() {
           <div class="table-wrap">
             <table>
               <tr><th>Evaluator</th><th>Bundle</th><th>Subject</th><th>Sheets</th><th>Status</th><th>Progress</th><th></th></tr>
-              <tr><td>Dr. Meena Iyer</td><td>B-004</td><td>DS & Algorithms</td><td>25</td><td><span class="badge badge-info">Assigned</span></td><td><div class="progress" style="width:120px"><div class="progress-bar" style="width:40%"></div></div></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-004 Progress','Dr. Meena Iyer has evaluated 10 of 25 answer sheets so far (40% complete).', {icon:'fa-chart-line'})">Track</button></td></tr>
-              <tr><td>Prof. Amit Kumar</td><td>B-005</td><td>DS & Algorithms</td><td>25</td><td><span class="badge badge-success">Completed</span></td><td><div class="progress" style="width:120px"><div class="progress-bar success" style="width:100%"></div></div></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-005','All 25 answer sheets evaluated by Prof. Amit Kumar. Marks submitted for scrutiny.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button></td></tr>
-              <tr><td>Dr. Sunita Rao</td><td>B-006</td><td>DS & Algorithms</td><td>25</td><td><span class="badge badge-warning">In Progress</span></td><td><div class="progress" style="width:120px"><div class="progress-bar" style="width:60%"></div></div></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-006 Progress','Dr. Sunita Rao has evaluated 15 of 25 answer sheets so far (60% complete).', {icon:'fa-chart-line'})">Track</button></td></tr>
-              <tr><td>Prof. Rajesh Pillai</td><td>B-007</td><td>DS & Algorithms</td><td>25</td><td><span class="badge badge-warning">In Progress</span></td><td><div class="progress" style="width:120px"><div class="progress-bar" style="width:20%"></div></div></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-007 Progress','Prof. Rajesh Pillai has evaluated 5 of 25 answer sheets so far (20% complete).', {icon:'fa-chart-line'})">Track</button></td></tr>
+              ${rows || '<tr><td colspan="7" class="text-center text-muted" style="padding:20px">No bundles assigned yet.</td></tr>'}
             </table>
           </div>
         </div>
@@ -1512,28 +1604,72 @@ function renderMarksEntry() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Evaluator enters marks for internal/practical bundles only.'
     : 'Evaluator: Enter marks for assigned bundles. Validate before submission.';
+  const bundle = data.bundles.find(b => b.status === 'Assigned');
+  if (!bundle) {
+    return `
+      <div class="page-content">
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
+        <div class="card"><div class="card-body">
+          <div class="text-center empty-state"><i class="fas fa-check-circle" style="color:var(--success)"></i><p>No bundle is currently assigned and awaiting marks entry. All assigned bundles have been submitted.</p></div>
+        </div></div>
+      </div>
+    `;
+  }
+  const studentRows = Array.from({ length: 5 }, (_, idx) => idx + 1)
+    .map(i => `<tr><td>${i}</td><td>S0${60 + i} - Student ${i}</td><td>AS-00${100 + i}</td><td><input class="form-control mark-input" style="width:80px;padding:4px 8px" value="${60 + i * 5}"></td><td><input class="form-control" style="padding:4px 8px" placeholder="Optional"></td></tr>`)
+    .join('');
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>B-006 — DS & Algorithms</option></select>
+        <select class="form-control"><option>${bundle.id} — ${bundle.subject}</option></select>
         <span class="chip"><i class="fas fa-check"></i> Max Marks: 100</span>
-        <span class="chip"><i class="fas fa-save"></i> Draft Saved</span>
-        <button class="btn btn-success btn-sm" style="margin-left:auto" onclick="openModal('Marks Submitted','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Marks Submitted Successfully</h3><p class=\\'text-muted\\'>Bundle B-006 marks have been submitted for scrutiny.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'scrutiny\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Scrutiny</button>')"><i class="fas fa-check"></i> Submit Final Marks</button>
+        <span class="chip"><i class="fas fa-hourglass-half"></i> ${bundle.progress}% Complete</span>
+        <button class="btn btn-success btn-sm" style="margin-left:auto" onclick="submitFinalMarks('${bundle.id}')"><i class="fas fa-check"></i> Submit Final Marks</button>
       </div>
       <div class="card">
-        <div class="card-header"><h3><i class="fas fa-pencil-alt"></i> Marks Entry — Bundle B-006</h3><div class="flex gap-2"><button class="btn btn-sm" onclick="showActionModal('Draft Saved','Your marks entry progress for Bundle B-006 has been saved as a draft.', {icon:'fa-save', iconColor:'var(--success)', showCancel:false, confirmLabel:'OK'})"><i class="fas fa-save"></i> Save Draft</button></div></div>
+        <div class="card-header"><h3><i class="fas fa-pencil-alt"></i> Marks Entry — Bundle ${bundle.id}</h3><div class="flex gap-2"><button class="btn btn-sm" onclick="showActionModal('Draft Saved','Your marks entry progress for Bundle ${bundle.id} has been saved as a draft.', {icon:'fa-save', iconColor:'var(--success)', showCancel:false, confirmLabel:'OK'})"><i class="fas fa-save"></i> Save Draft</button></div></div>
         <div class="card-body">
           <div class="table-wrap">
             <table>
               <tr><th>#</th><th>Student</th><th>Answer Sheet #</th><th>Marks (Max 100)</th><th>Remarks</th></tr>
-              ${[1,2,3,4,5].map(i => `<tr><td>${i}</td><td>S0${60+i} - Student ${i}</td><td>AS-00${100+i}</td><td><input class="form-control" style="width:80px;padding:4px 8px" value="${60+i*5}"></td><td><input class="form-control" style="padding:4px 8px" placeholder="Optional"></td></tr>`).join('')}
+              ${studentRows}
             </table>
           </div>
         </div>
       </div>
     </div>
   `;
+}
+
+function submitFinalMarks(bundleId) {
+  const inputs = document.querySelectorAll('.mark-input');
+  for (const input of inputs) {
+    const val = Number(input.value);
+    if (input.value.trim() === '' || isNaN(val) || val < 0 || val > 100) {
+      input.style.borderColor = 'var(--danger)';
+      input.focus();
+      showToast('Marks must be between 0 and 100 for every student');
+      return;
+    }
+    input.style.borderColor = '';
+  }
+  const bundle = data.bundles.find(b => b.id === bundleId);
+  if (!bundle) return;
+  showActionModal('Submit Final Marks', `Submit final marks for Bundle ${bundleId}? Once submitted, this bundle moves to scrutiny and cannot be edited by the evaluator.`, {
+    icon: 'fa-check-circle', confirmLabel: 'Submit', confirmIcon: 'fa-check',
+    onConfirm: function () {
+      bundle.status = 'Completed';
+      bundle.statusClass = 'badge-success';
+      bundle.progress = 100;
+      bundle.submitted = 'Today';
+      bundle.scrutiny = 'Pending Review';
+      bundle.scrutinyClass = 'badge-warning';
+      bundle.errors = 0;
+      showPage('scrutiny');
+      showToast('Bundle ' + bundleId + ' submitted for scrutiny');
+    }
+  });
 }
 
 // ============================================================
@@ -1546,12 +1682,20 @@ function renderScrutiny() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Verify marks submitted by evaluators for internal/practical bundles.'
     : 'Verify marks submitted by evaluators. Return for correction if needed.';
+  const submittedBundles = data.bundles.filter(b => b.status === 'Completed');
+  const rows = submittedBundles.map(b => {
+    const action = b.scrutiny === 'Approved'
+      ? `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id}','${b.sheets} sheets, ${b.errors} errors found. Approved on ${b.submitted} and locked for result processing.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button>`
+      : `<button class="btn btn-sm btn-primary" onclick="openScrutinyReviewModal('${b.id}')">Review</button>`;
+    return `<tr><td>${b.id}</td><td>${b.evaluator}</td><td>${b.sheets}</td><td>${b.submitted}</td><td>${b.errors}</td><td><span class="badge ${b.scrutinyClass}">${b.scrutiny}</span></td><td>${action}</td></tr>`;
+  }).join('');
+  const pendingCount = submittedBundles.filter(b => b.scrutiny === 'Pending Review').length;
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
         <select class="form-control"><option>DS & Algorithms (CS401)</option></select>
-        <button class="btn btn-sm" style="margin-left:auto" onclick="showActionModal('Approve All','Approve all bundles with zero errors found (B-004, B-005)? Bundles with pending issues still need individual review.', {icon:'fa-check', confirmLabel:'Approve All', confirmIcon:'fa-check', onConfirm:()=>showPage('scrutiny')})"><i class="fas fa-check"></i> Approve All</button>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="scrutinyApproveAll()" ${pendingCount ? '' : 'disabled title="Nothing pending review"'}><i class="fas fa-check"></i> Approve All</button>
       </div>
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-search"></i> Scrutiny Dashboard</h3></div>
@@ -1559,16 +1703,81 @@ function renderScrutiny() {
           <div class="table-wrap">
             <table>
               <tr><th>Bundle</th><th>Evaluator</th><th>Sheets</th><th>Submitted</th><th>Errors Found</th><th>Status</th><th></th></tr>
-              <tr><td>B-004</td><td>Dr. Meena Iyer</td><td>25</td><td>12 Apr</td><td>0</td><td><span class="badge badge-success">Approved</span></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-004','25 sheets, 0 errors found. Approved on 12 Apr and locked for result processing.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button></td></tr>
-              <tr><td>B-005</td><td>Prof. Amit Kumar</td><td>25</td><td>11 Apr</td><td>0</td><td><span class="badge badge-success">Approved</span></td><td><button class="btn btn-sm" onclick="showActionModal('Bundle B-005','25 sheets, 0 errors found. Approved on 11 Apr and locked for result processing.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button></td></tr>
-              <tr><td>B-006</td><td>Dr. Sunita Rao</td><td>25</td><td>13 Apr</td><td>2</td><td><span class="badge badge-warning">Pending Review</span></td><td><button class="btn btn-sm btn-primary" onclick="openModal('Scrutiny Review','<p>Bundle B-006 has 2 potential issues:</p><ul><li>Student S065: Marks (95) exceed max (100)? — <strong>Valid</strong></li><li>Student S067: Missing marks — <strong>Return for correction</strong></li></ul>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-warning\\' onclick=\\'closeModal()\\'>Return for Correction</button><button class=\\'btn btn-success\\' onclick=\\'closeModal()\\'>Approve</button>')">Review</button></td></tr>
-              <tr><td>B-007</td><td>Prof. Rajesh Pillai</td><td>25</td><td>14 Apr</td><td>1</td><td><span class="badge badge-warning">Pending Review</span></td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Scrutiny Review — Bundle B-007','Bundle B-007 has 1 potential issue: Student S073 has a totaling mismatch (marks entered do not sum to the total). Please return for correction or approve if valid.', {icon:'fa-exclamation-triangle', iconColor:'var(--warning)', confirmLabel:'Return for Correction', confirmClass:'btn-warning', onConfirm:()=>showPage('scrutiny')})">Review</button></td></tr>
+              ${rows || '<tr><td colspan="7" class="text-center text-muted" style="padding:20px">No bundles submitted for scrutiny yet.</td></tr>'}
             </table>
           </div>
         </div>
       </div>
     </div>
   `;
+}
+
+function openScrutinyReviewModal(bundleId) {
+  const bundle = data.bundles.find(b => b.id === bundleId);
+  if (!bundle) return;
+  const message = bundle.errors > 0
+    ? `Bundle ${bundleId} has ${bundle.errors} potential issue(s): missing marks or totaling mismatches were found. Approve if the marks are actually valid, or return the bundle to the evaluator for correction.`
+    : `Bundle ${bundleId} has no errors found. Ready to approve and lock for result processing.`;
+  document.getElementById('modalTitle').textContent = 'Scrutiny Review — Bundle ' + bundleId;
+  const body = document.getElementById('modalBody');
+  body.innerHTML = '';
+  const p = document.createElement('p');
+  p.textContent = message;
+  body.appendChild(p);
+
+  const footer = document.getElementById('modalFooter');
+  footer.innerHTML = '';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = closeModal;
+  footer.appendChild(cancelBtn);
+
+  if (bundle.errors > 0) {
+    const returnBtn = document.createElement('button');
+    returnBtn.className = 'btn btn-warning';
+    returnBtn.textContent = 'Return for Correction';
+    returnBtn.onclick = function () {
+      bundle.status = 'Assigned';
+      bundle.statusClass = 'badge-info';
+      bundle.progress = 50;
+      bundle.submitted = null;
+      bundle.scrutiny = null;
+      bundle.scrutinyClass = '';
+      bundle.errors = 0;
+      closeModal();
+      showPage('scrutiny');
+      showToast('Bundle ' + bundleId + ' returned to ' + bundle.evaluator + ' for correction');
+    };
+    footer.appendChild(returnBtn);
+  }
+
+  const approveBtn = document.createElement('button');
+  approveBtn.className = 'btn btn-success';
+  approveBtn.textContent = 'Approve';
+  approveBtn.onclick = function () {
+    bundle.scrutiny = 'Approved';
+    bundle.scrutinyClass = 'badge-success';
+    closeModal();
+    showPage('scrutiny');
+    showToast('Bundle ' + bundleId + ' approved');
+  };
+  footer.appendChild(approveBtn);
+
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function scrutinyApproveAll() {
+  const pending = data.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors === 0);
+  const withErrors = data.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors > 0);
+  showActionModal('Approve All', `Approve all bundles with zero errors found (${pending.length ? pending.map(b => b.id).join(', ') : 'none'})? ${withErrors.length ? withErrors.length + ' bundle(s) with pending issues still need individual review.' : ''}`, {
+    icon: 'fa-check', confirmLabel: 'Approve All', confirmIcon: 'fa-check',
+    onConfirm: function () {
+      pending.forEach(b => { b.scrutiny = 'Approved'; b.scrutinyClass = 'badge-success'; });
+      showPage('scrutiny');
+      showToast(pending.length + ' bundle(s) approved');
+    }
+  });
 }
 
 // ============================================================
