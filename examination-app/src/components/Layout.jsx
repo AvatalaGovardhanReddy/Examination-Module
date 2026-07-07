@@ -1,3 +1,4 @@
+import React from 'react'
 import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 

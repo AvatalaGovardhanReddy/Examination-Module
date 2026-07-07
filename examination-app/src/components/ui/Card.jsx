@@ -1,3 +1,4 @@
+import React from 'react'
 // Card with an optional header (title + optional right-side actions).
 export default function Card({ title, icon, actions, children }) {
   return (

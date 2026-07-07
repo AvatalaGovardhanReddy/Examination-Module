@@ -1,3 +1,4 @@
+import React from 'react'
 // Inline info/success/warning banner.
 const ICON = {
   info: 'fa-info-circle',

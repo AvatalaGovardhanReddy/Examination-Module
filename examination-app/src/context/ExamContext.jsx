@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
+import { staticExamStore } from '../data/examStore.js'
 
 // ============================================================
 // EXAM CONTROL MODE - global state
@@ -33,7 +34,25 @@ const ExamContext = createContext(null)
 
 export function ExamProvider({ children }) {
   const [mode, setMode] = useState('autonomous')
-  const value = { mode, setMode, modeInfo: MODES[mode] }
+  const [activeExam, setActiveExam] = useState(staticExamStore.activeExam)
+  const [recentExams, setRecentExams] = useState(staticExamStore.recentExams)
+
+  function createExam(details) {
+    const modeInfo = MODES[mode]
+    const saved = staticExamStore.saveExam(details, modeInfo)
+    setActiveExam(saved.activeExam)
+    setRecentExams(saved.recentExams)
+    return saved.activeExam
+  }
+
+  const value = {
+    mode,
+    setMode,
+    modeInfo: MODES[mode],
+    activeExam,
+    recentExams,
+    createExam,
+  }
   return <ExamContext.Provider value={value}>{children}</ExamContext.Provider>
 }
 

@@ -1,5 +1,7 @@
+import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { activeExam, preExamWorkflow } from '../data/mockData.js'
+import { useExam } from '../context/ExamContext.jsx'
+import { preExamWorkflow } from '../data/mockData.js'
 
 // Pre-Exam navigation. Each route maps to one feature from section 3
 // of the requirement doc. Dashboard/Overview sits above the group.
@@ -22,6 +24,7 @@ const statusClass = {
 }
 
 export default function Sidebar() {
+  const { activeExam } = useExam()
   const completed = preExamWorkflow.filter((step) => step.progress === 100).length
 
   return (

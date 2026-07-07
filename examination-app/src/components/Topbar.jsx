@@ -1,10 +1,10 @@
+import React from 'react'
 import { useExam } from '../context/ExamContext.jsx'
-import { activeExam } from '../data/mockData.js'
 
 // Top bar shows the current page title, a breadcrumb, and the active
 // Exam Control Mode badge (kept in sync via ExamContext).
 export default function Topbar({ title, breadcrumb }) {
-  const { modeInfo } = useExam()
+  const { modeInfo, recentExams } = useExam()
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -15,9 +15,9 @@ export default function Topbar({ title, breadcrumb }) {
       </div>
       <div className="topbar-right">
         <select className="topbar-select" aria-label="Active examination">
-          <option>{activeExam.name}</option>
-          <option>Sem VI Regular Nov 2026</option>
-          <option>Sem II Supplementary Jun 2026</option>
+          {recentExams.map((exam) => (
+            <option key={exam.name}>{exam.name}</option>
+          ))}
         </select>
         <button className="topbar-icon-btn" type="button" aria-label="Sync ERP data">
           <i className="fas fa-rotate" />

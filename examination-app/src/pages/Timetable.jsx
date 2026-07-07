@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Layout from '../components/Layout.jsx'
 import Card from '../components/ui/Card.jsx'
 import Alert from '../components/ui/Alert.jsx'
@@ -6,7 +6,7 @@ import Badge from '../components/ui/Badge.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import { useExam } from '../context/ExamContext.jsx'
-import { activeExam, initialTimetable, subjects, timetableChecks } from '../data/mockData.js'
+import { initialTimetable, subjects, timetableChecks } from '../data/mockData.js'
 
 function fmtDate(iso) {
   if (!iso) return 'TBD'
@@ -26,7 +26,7 @@ function dateParts(iso) {
 }
 
 export default function Timetable() {
-  const { mode } = useExam()
+  const { mode, activeExam } = useExam()
   const toast = useToast()
   const isAffiliated = mode === 'affiliated'
 

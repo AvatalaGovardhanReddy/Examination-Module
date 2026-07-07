@@ -1448,6 +1448,118 @@ a.workflow-step-card:hover {
   background: var(--accent);
 }
 
+.drag-seat-board {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.7fr) minmax(0, 1.6fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.drag-student-pool,
+.drag-room-zone {
+  min-height: 184px;
+  padding: 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--card-muted);
+  transition: var(--transition);
+}
+
+.drag-room-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.drag-student-pool.drag-over,
+.drag-room-zone.drag-over {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 1px rgba(36, 87, 197, 0.14);
+}
+
+.drag-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.drag-panel-head strong {
+  display: block;
+  font-size: 13px;
+}
+
+.drag-panel-head span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.drag-student-list,
+.drag-room-list {
+  display: grid;
+  gap: 8px;
+}
+
+.drag-student-chip {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  cursor: grab;
+  transition: var(--transition);
+}
+
+.drag-student-chip:hover {
+  border-color: #cbd9fa;
+  transform: translateY(-1px);
+}
+
+.drag-student-chip:active {
+  cursor: grabbing;
+}
+
+.drag-student-chip.assigned {
+  background: #fbfdff;
+  border-color: #cbd9fa;
+}
+
+.drag-student-chip i {
+  color: var(--primary);
+  width: 16px;
+  text-align: center;
+}
+
+.drag-student-chip strong {
+  display: block;
+  font-size: 12px;
+}
+
+.drag-student-chip span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.drag-empty {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
 /* Invigilator ---------------------------------------------- */
 .faculty-grid {
   display: grid;
@@ -1652,7 +1764,8 @@ a.workflow-step-card:hover {
 @media (max-width: 1120px) {
   .workspace-banner,
   .split-grid,
-  .equal-grid {
+  .equal-grid,
+  .drag-seat-board {
     grid-template-columns: 1fr;
   }
 
