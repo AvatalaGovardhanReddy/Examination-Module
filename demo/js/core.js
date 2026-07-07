@@ -13,7 +13,8 @@ const pageTitles = {
   'bundle': 'Bundle Creation', 'evaluator': 'Evaluator Assignment', 'marks-entry': 'Marks Entry',
   'scrutiny': 'Scrutiny', 'consolidation': 'Marks Consolidation', 'result-processing': 'Result Processing',
   'result-freeze': 'Result Review & Freeze', 'result-declaration': 'Result Declaration', 'marks-memo': 'Marks Memo / Grade Card',
-  'revaluation': 'Revaluation', 'reports': 'Reports & Analytics'
+  'revaluation': 'Revaluation', 'reports': 'Reports & Analytics',
+  'student-result': 'My Result', 'student-revaluation': 'Apply Revaluation'
 };
 
 let currentPage = 'dashboard';
@@ -35,13 +36,30 @@ function toggleSection(el) { el.classList.toggle('open'); }
 
 function showPage(page) {
   currentPage = page;
-  document.getElementById('pageTitle').textContent = pageTitles[page] || 'Dashboard';
-  document.getElementById('breadcrumbPage').textContent = pageTitles[page] || 'Overview';
+  try { localStorage.setItem('examDemoCurrentPage', page); } catch (e) {}
+  const pageTitleEl = document.getElementById('pageTitle');
+  const breadcrumbEl = document.getElementById('breadcrumbPage');
+  if (pageTitleEl) pageTitleEl.textContent = pageTitles[page] || 'Dashboard';
+  if (breadcrumbEl) breadcrumbEl.textContent = pageTitles[page] || 'Overview';
   document.querySelectorAll('.nav-sub a').forEach(a => a.classList.remove('active'));
   const activeLink = document.querySelector(`.nav-sub a[onclick*="'${page}'"]`);
   if (activeLink) activeLink.classList.add('active');
   updateModeBadge();
   renderPage(page);
+  return false;
+}
+
+// Cross-context navigation for links used by shared render functions
+// (e.g. renderEvaluator()'s "create a bundle first" link): inside the SPA
+// (index.html has #pageTitle) it does an in-app showPage() switch; on a
+// standalone post-exam/*.html page (no #pageTitle) it does a real page
+// navigation to the sibling file instead, since there's no SPA router there.
+function goToPage(page, standaloneFile) {
+  if (document.getElementById('pageTitle')) {
+    showPage(page);
+  } else {
+    window.location.href = standaloneFile;
+  }
   return false;
 }
 
@@ -183,6 +201,8 @@ function renderPage(page) {
     case 'marks-memo': c.innerHTML = renderMarksMemo(); break;
     case 'revaluation': c.innerHTML = renderRevaluation(); break;
     case 'reports': c.innerHTML = renderReports(); break;
+    case 'student-result': c.innerHTML = renderStudentResult(); break;
+    case 'student-revaluation': c.innerHTML = renderStudentRevaluation(); break;
     default: c.innerHTML = renderDashboard();
   }
 }
@@ -255,12 +275,14 @@ function applyLogin() {
   applySidebarAccessForRole(role);
   updateModeBadge();
   try { localStorage.setItem('examDemoSession', JSON.stringify(loggedInUser)); } catch (e) {}
-  showPage('dashboard');
+  let savedPage = null;
+  try { savedPage = localStorage.getItem('examDemoCurrentPage'); } catch (e) {}
+  showPage(savedPage && pageTitles[savedPage] ? savedPage : 'dashboard');
 }
 
 function handleLogout() {
   loggedInUser = null;
-  try { localStorage.removeItem('examDemoSession'); } catch (e) {}
+  try { localStorage.removeItem('examDemoSession'); localStorage.removeItem('examDemoCurrentPage'); } catch (e) {}
   document.getElementById('loginOverlay').classList.remove('hidden');
   document.getElementById('loginError').classList.remove('show');
   document.querySelector('.login-role.selected')?.classList.remove('selected');
@@ -294,7 +316,7 @@ document.addEventListener('keydown', function(e) {
 // leaving them silently do nothing when clicked, show a toast so
 // every button gives visible feedback.
 // ============================================================
-function showToast(label) {
+function showToast(label, isDemo) {
   let toast = document.getElementById('demoToast');
   if (!toast) {
     toast = document.createElement('div');
@@ -302,7 +324,7 @@ function showToast(label) {
     toast.className = 'demo-toast';
     document.body.appendChild(toast);
   }
-  toast.innerHTML = `<i class="fas fa-info-circle"></i> "${label}" — this action isn't wired up in the demo yet.`;
+  toast.innerHTML = `<i class="fas fa-info-circle"></i> ${label}${isDemo ? ' — this action isn\'t wired up in the demo yet.' : ''}`;
   toast.classList.add('show');
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => toast.classList.remove('show'), 2600);
@@ -310,7 +332,7 @@ function showToast(label) {
 
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('button');
-  if (!btn || btn.hasAttribute('onclick')) return;
+  if (!btn || btn.hasAttribute('onclick') || btn.onclick) return;
   const label = btn.textContent.trim().replace(/\s+/g, ' ');
-  showToast(label || 'Button');
+  showToast('"' + label + '"', true);
 });

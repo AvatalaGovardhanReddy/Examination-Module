@@ -126,10 +126,14 @@ function openCreateBundleModal(subjectCode) {
   });
 }
 
-function openAssignEvaluatorModal(prefilledBundleId) {
-  const unassigned = data.bundles.filter(b => b.status === 'Unassigned');
+function openAssignEvaluatorModal(prefilledBundleId, subjectCode) {
+  let unassigned = data.bundles.filter(b => b.status === 'Unassigned');
+  if (subjectCode && subjectCode !== 'all') {
+    unassigned = unassigned.filter(b => b.subjectCode === subjectCode);
+  }
   if (unassigned.length === 0) {
-    showToast('No unassigned bundles available');
+    const subject = subjectCode && subjectCode !== 'all' ? data.subjects.find(s => s.code === subjectCode) : null;
+    showToast(subject ? `No unassigned bundles for ${subject.name} — create one on Bundle Creation first` : 'No unassigned bundles available');
     return;
   }
   openFormModal('Assign Evaluator', `
@@ -159,16 +163,24 @@ function openAssignEvaluatorModal(prefilledBundleId) {
   });
 }
 
+const revalExtraStudents = ['Sneha Reddy', 'Ananya Gupta', 'Kavita Nair', 'Rohit Joshi', 'Aarav Sharma'];
+const revalExtraSubjects = ['DS & Algorithms', 'DBMS', 'Operating Systems', 'Computer Networks', 'Software Engineering', 'Mathematics IV'];
+
 function openNewRevaluationModal() {
+  const cfg = getRevalConfig();
+  const existingStudents = cfg.revaluationApplications.map(r => r.student).filter((v,i,a) => a.indexOf(v) === i);
+  const existingSubjects = cfg.revaluationApplications.map(r => r.subject).filter((v,i,a) => a.indexOf(v) === i);
+  const allStudents = [...revalExtraStudents.filter(s => !existingStudents.includes(s)), ...existingStudents];
+  const allSubjects = [...revalExtraSubjects.filter(s => !existingSubjects.includes(s)), ...existingSubjects];
   openFormModal('New Revaluation Request', `
     <div class="form-group"><label>Student</label>
       <select class="form-control" id="newRevalStudent">
-        <option>Rahul Verma</option><option>Arjun Desai</option><option>Divya Kulkarni</option><option>Sneha Reddy</option>
+        ${allStudents.map(s => `<option>${s}</option>`).join('')}
       </select>
     </div>
     <div class="form-group"><label>Subject</label>
       <select class="form-control" id="newRevalSubject">
-        <option>DS & Algorithms</option><option>DBMS</option><option>Operating Systems</option><option>Computer Networks</option><option>Software Engineering</option><option>Mathematics IV</option>
+        ${allSubjects.map(s => `<option>${s}</option>`).join('')}
       </select>
     </div>
     <div class="form-group"><label>Reason</label>
@@ -177,7 +189,7 @@ function openNewRevaluationModal() {
   `, 'Submit Request', function () {
     const student = document.getElementById('newRevalStudent').value;
     const subject = document.getElementById('newRevalSubject').value;
-    data.revaluationApplications.unshift({
+    getRevalConfig().revaluationApplications.unshift({
       student, subject, marks: '—', feePaid: false, evaluator: '—',
       status: 'Fee Pending', statusClass: 'badge-danger',
     });
@@ -188,15 +200,18 @@ function openNewRevaluationModal() {
 }
 
 function openTrackRevaluationModal() {
+  const cfg = getRevalConfig();
+  const students = cfg.universityRevaluationTracking.map(r => r.student).filter((v,i,a) => a.indexOf(v) === i);
+  const subjects = cfg.universityRevaluationTracking.map(r => r.subject).filter((v,i,a) => a.indexOf(v) === i);
   openFormModal('Track University Revaluation', `
     <div class="form-group"><label>Student</label>
       <select class="form-control" id="newTrackStudent">
-        <option>Rahul Verma</option><option>Arjun Desai</option><option>Divya Kulkarni</option><option>Sneha Reddy</option>
+        ${students.map(s => `<option>${s}</option>`).join('') || '<option>New Student</option>'}
       </select>
     </div>
     <div class="form-group"><label>Subject</label>
       <select class="form-control" id="newTrackSubject">
-        <option>DS & Algorithms</option><option>DBMS</option><option>Operating Systems</option><option>Computer Networks</option><option>Software Engineering</option><option>Mathematics IV</option>
+        ${subjects.map(s => `<option>${s}</option>`).join('') || '<option>General</option>'}
       </select>
     </div>
     <div class="form-group"><label>University Application Number</label>
@@ -205,7 +220,7 @@ function openTrackRevaluationModal() {
   `, 'Track Application', function () {
     const student = document.getElementById('newTrackStudent').value;
     const subject = document.getElementById('newTrackSubject').value;
-    data.universityRevaluationTracking.unshift({
+    getRevalConfig().universityRevaluationTracking.unshift({
       student, subject, marks: '—', feePaid: true,
       uniStatus: 'Submitted to University', uniStatusClass: 'badge-warning', revised: '—',
     });
@@ -224,7 +239,7 @@ function openAssignRevaluationModal(student) {
     </div>
   `, 'Assign', function () {
     const evaluator = document.getElementById('assignRevalEvaluator').value;
-    const entry = data.revaluationApplications.find(r => r.student === student);
+    const entry = getRevalConfig().revaluationApplications.find(r => r.student === student);
     if (entry) {
       entry.evaluator = evaluator;
       entry.status = 'In Progress';

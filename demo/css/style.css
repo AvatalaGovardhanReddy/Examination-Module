@@ -96,8 +96,11 @@
     .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+    .btn-success:hover { background: #15803d; }
     .btn-warning { background: var(--warning); color: #fff; border-color: var(--warning); }
+    .btn-warning:hover { background: #b45309; }
     .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-danger:hover { background: #b91c1c; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
     .btn-lg { padding: 12px 24px; font-size: 15px; }
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }

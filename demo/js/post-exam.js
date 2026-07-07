@@ -179,6 +179,13 @@ function submitFinalMarks(bundleId) {
       bundle.scrutiny = 'Pending Review';
       bundle.scrutinyClass = 'badge-warning';
       bundle.errors = 0;
+      const examBundles = scrutinyExams[selectedScrutinyExam].bundles;
+      const existing = examBundles.find(b => b.id === bundleId);
+      if (existing) {
+        Object.assign(existing, bundle);
+      } else {
+        examBundles.push({ ...bundle });
+      }
       showPage('scrutiny');
       showToast('Bundle ' + bundleId + ' submitted for scrutiny');
     }
@@ -188,6 +195,55 @@ function submitFinalMarks(bundleId) {
 // ============================================================
 // SCRUTINY
 // ============================================================
+const scrutinyExams = {
+  'Sem IV Regular Apr 2026': {
+    bundles: [
+      { id: 'B-001', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '1 - 25', sheets: 25, evaluator: 'Dr. Meena Iyer', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '10 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-002', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '26 - 50', sheets: 25, evaluator: 'Prof. Amit Kumar', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '11 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-003', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '51 - 75', sheets: 25, evaluator: 'Prof. Rajesh Pillai', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '11 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-004', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '76 - 100', sheets: 25, evaluator: 'Dr. Sunita Rao', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '13 Apr 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 2 },
+      { id: 'B-005', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '101 - 125', sheets: 25, evaluator: 'Prof. Amit Kumar', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '11 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-006', subjectCode: 'CS401', subject: 'DS & Algorithms', range: '126 - 150', sheets: 25, evaluator: 'Dr. Sunita Rao', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '13 Apr 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 2 },
+    ],
+  },
+  'Sem VI Regular Apr 2026': {
+    bundles: [
+      { id: 'B-101', subjectCode: 'CS601', subject: 'Machine Learning', range: '1 - 20', sheets: 20, evaluator: 'Dr. Neha Shah', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '08 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-102', subjectCode: 'CS601', subject: 'Machine Learning', range: '21 - 40', sheets: 20, evaluator: 'Prof. Amit Kumar', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '09 Apr 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 0 },
+      { id: 'B-103', subjectCode: 'CS602', subject: 'Cloud Computing', range: '1 - 25', sheets: 25, evaluator: 'Dr. Meena Iyer', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '09 Apr 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-104', subjectCode: 'CS602', subject: 'Cloud Computing', range: '26 - 50', sheets: 25, evaluator: 'Dr. Sunita Rao', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '10 Apr 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 1 },
+    ],
+  },
+  'Sem II Supplementary Jan 2026': {
+    bundles: [
+      { id: 'B-201', subjectCode: 'CS201', subject: 'Programming in C', range: '1 - 15', sheets: 15, evaluator: 'Prof. Rajesh Pillai', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '22 Jan 2026', scrutiny: 'Approved', scrutinyClass: 'badge-success', errors: 0 },
+      { id: 'B-202', subjectCode: 'CS202', subject: 'Discrete Maths', range: '1 - 12', sheets: 12, evaluator: 'Dr. Neha Shah', status: 'Completed', statusClass: 'badge-success', progress: 100, submitted: '23 Jan 2026', scrutiny: 'Pending Review', scrutinyClass: 'badge-warning', errors: 3 },
+    ],
+  },
+};
+
+let selectedScrutinyExam = 'Sem IV Regular Apr 2026';
+let selectedScrutinyStatus = 'All';
+
+function getScrutinyBundles() {
+  const exam = scrutinyExams[selectedScrutinyExam] || scrutinyExams['Sem IV Regular Apr 2026'];
+  let list = exam.bundles.filter(b => b.status === 'Completed');
+  if (selectedScrutinyStatus !== 'All') {
+    list = list.filter(b => b.scrutiny === selectedScrutinyStatus);
+  }
+  return list;
+}
+
+function changeScrutinyExam(value) {
+  selectedScrutinyExam = value;
+  showPage('scrutiny');
+}
+
+function changeScrutinyStatus(value) {
+  selectedScrutinyStatus = value;
+  showPage('scrutiny');
+}
+
 function renderScrutiny() {
   if (currentMode === 'affiliated') {
     return renderAffiliatedNotApplicable('fa-search', 'Scrutiny Not Required', 'University-evaluated marks are verified during result import mapping, not through college scrutiny.');
@@ -195,20 +251,28 @@ function renderScrutiny() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Verify marks submitted by evaluators for internal/practical bundles.'
     : 'Verify marks submitted by evaluators. Return for correction if needed.';
-  const submittedBundles = data.bundles.filter(b => b.status === 'Completed');
+  const examOptions = Object.keys(scrutinyExams).map(key =>
+    `<option value="${key}" ${key === selectedScrutinyExam ? 'selected' : ''}>${key}</option>`
+  ).join('');
+  const statusOptions = ['All', 'Approved', 'Pending Review'].map(s =>
+    `<option value="${s}" ${s === selectedScrutinyStatus ? 'selected' : ''}>${s}</option>`
+  ).join('');
+  const submittedBundles = getScrutinyBundles();
   const rows = submittedBundles.map(b => {
     const action = b.scrutiny === 'Approved'
       ? `<button class="btn btn-sm" onclick="showActionModal('Bundle ${b.id}','${b.sheets} sheets, ${b.errors} errors found. Approved on ${b.submitted} and locked for result processing.', {icon:'fa-check-circle', iconColor:'var(--success)'})">View</button>`
       : `<button class="btn btn-sm btn-primary" onclick="openScrutinyReviewModal('${b.id}')">Review</button>`;
     return `<tr><td>${b.id}</td><td>${b.evaluator}</td><td>${b.sheets}</td><td>${b.submitted}</td><td>${b.errors}</td><td><span class="badge ${b.scrutinyClass}">${b.scrutiny}</span></td><td>${action}</td></tr>`;
   }).join('');
-  const pendingCount = submittedBundles.filter(b => b.scrutiny === 'Pending Review').length;
+  const allBundles = scrutinyExams[selectedScrutinyExam].bundles.filter(b => b.status === 'Completed');
+  const allPending = allBundles.filter(b => b.scrutiny === 'Pending Review' && b.errors === 0);
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>DS & Algorithms (CS401)</option></select>
-        <button class="btn btn-sm" style="margin-left:auto" onclick="scrutinyApproveAll()" ${pendingCount ? '' : 'disabled title="Nothing pending review"'}><i class="fas fa-check"></i> Approve All</button>
+        <select class="form-control" onchange="changeScrutinyExam(this.value)">${examOptions}</select>
+        <select class="form-control" onchange="changeScrutinyStatus(this.value)">${statusOptions}</select>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="scrutinyApproveAll()" ${allPending.length ? '' : 'disabled title="Nothing pending review"'}><i class="fas fa-check"></i> Approve All</button>
       </div>
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-search"></i> Scrutiny Dashboard</h3></div>
@@ -216,7 +280,7 @@ function renderScrutiny() {
           <div class="table-wrap">
             <table>
               <tr><th>Bundle</th><th>Evaluator</th><th>Sheets</th><th>Submitted</th><th>Errors Found</th><th>Status</th><th></th></tr>
-              ${rows || '<tr><td colspan="7" class="text-center text-muted" style="padding:20px">No bundles submitted for scrutiny yet.</td></tr>'}
+              ${rows || '<tr><td colspan="7" class="text-center text-muted" style="padding:20px">No bundles match the selected filters.</td></tr>'}
             </table>
           </div>
         </div>
@@ -226,7 +290,8 @@ function renderScrutiny() {
 }
 
 function openScrutinyReviewModal(bundleId) {
-  const bundle = data.bundles.find(b => b.id === bundleId);
+  const exam = scrutinyExams[selectedScrutinyExam] || scrutinyExams['Sem IV Regular Apr 2026'];
+  const bundle = exam.bundles.find(b => b.id === bundleId);
   if (!bundle) return;
   const message = bundle.errors > 0
     ? `Bundle ${bundleId} has ${bundle.errors} potential issue(s): missing marks or totaling mismatches were found. Approve if the marks are actually valid, or return the bundle to the evaluator for correction.`
@@ -258,6 +323,8 @@ function openScrutinyReviewModal(bundleId) {
       bundle.scrutiny = null;
       bundle.scrutinyClass = '';
       bundle.errors = 0;
+      const dbBundle = data.bundles.find(b => b.id === bundleId);
+      if (dbBundle) { Object.assign(dbBundle, bundle); }
       closeModal();
       showPage('scrutiny');
       showToast('Bundle ' + bundleId + ' returned to ' + bundle.evaluator + ' for correction');
@@ -271,6 +338,8 @@ function openScrutinyReviewModal(bundleId) {
   approveBtn.onclick = function () {
     bundle.scrutiny = 'Approved';
     bundle.scrutinyClass = 'badge-success';
+    const dbBundle = data.bundles.find(b => b.id === bundleId);
+    if (dbBundle) { dbBundle.scrutiny = 'Approved'; dbBundle.scrutinyClass = 'badge-success'; }
     closeModal();
     showPage('scrutiny');
     showToast('Bundle ' + bundleId + ' approved');
@@ -281,12 +350,17 @@ function openScrutinyReviewModal(bundleId) {
 }
 
 function scrutinyApproveAll() {
-  const pending = data.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors === 0);
-  const withErrors = data.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors > 0);
+  const exam = scrutinyExams[selectedScrutinyExam] || scrutinyExams['Sem IV Regular Apr 2026'];
+  const pending = exam.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors === 0);
+  const withErrors = exam.bundles.filter(b => b.status === 'Completed' && b.scrutiny === 'Pending Review' && b.errors > 0);
   showActionModal('Approve All', `Approve all bundles with zero errors found (${pending.length ? pending.map(b => b.id).join(', ') : 'none'})? ${withErrors.length ? withErrors.length + ' bundle(s) with pending issues still need individual review.' : ''}`, {
     icon: 'fa-check', confirmLabel: 'Approve All', confirmIcon: 'fa-check',
     onConfirm: function () {
-      pending.forEach(b => { b.scrutiny = 'Approved'; b.scrutinyClass = 'badge-success'; });
+      pending.forEach(b => {
+        b.scrutiny = 'Approved'; b.scrutinyClass = 'badge-success';
+        const dbBundle = data.bundles.find(d => d.id === b.id);
+        if (dbBundle) { dbBundle.scrutiny = 'Approved'; dbBundle.scrutinyClass = 'badge-success'; }
+      });
       showPage('scrutiny');
       showToast(pending.length + ' bundle(s) approved');
     }
@@ -435,6 +509,174 @@ function renderResultDeclaration() {
 // ============================================================
 // MARKS MEMO
 // ============================================================
+const memoExams = {
+  'Sem IV Regular Apr 2026': {
+    label: 'Sem IV Regular Apr 2026', students: [
+      { id: 'S001', name: 'Aarav Sharma', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S002', name: 'Priya Patel', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S003', name: 'Rahul Verma', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S004', name: 'Sneha Reddy', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S005', name: 'Vikram Singh', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S006', name: 'Ananya Gupta', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S007', name: 'Rohit Joshi', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S008', name: 'Kavita Nair', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S009', name: 'Arjun Desai', program: 'B.E. Computer', sem: 'IV' },
+      { id: 'S010', name: 'Divya Kulkarni', program: 'B.E. Computer', sem: 'IV' },
+    ],
+    memoPrefix: 'MM-2026-', startIdx: 0, baseSgpa: 7.5, baseCgpa: 7.2,
+  },
+  'Sem VI Regular Apr 2026': {
+    label: 'Sem VI Regular Apr 2026', students: [
+      { id: 'S011', name: 'Neha Sharma', program: 'B.E. Computer', sem: 'VI' },
+      { id: 'S012', name: 'Aditya Verma', program: 'B.E. Computer', sem: 'VI' },
+      { id: 'S013', name: 'Isha Patel', program: 'B.E. Computer', sem: 'VI' },
+      { id: 'S014', name: 'Karan Singh', program: 'B.E. Computer', sem: 'VI' },
+      { id: 'S015', name: 'Meera Iyer', program: 'B.E. Computer', sem: 'VI' },
+      { id: 'S016', name: 'Rohit Deshmukh', program: 'B.E. Computer', sem: 'VI' },
+    ],
+    memoPrefix: 'MM-2026-2', startIdx: 0, baseSgpa: 8.2, baseCgpa: 8.0,
+  },
+  'Sem II Supplementary Jan 2026': {
+    label: 'Sem II Supplementary Jan 2026', students: [
+      { id: 'S017', name: 'Akash Tiwari', program: 'B.E. Computer', sem: 'II' },
+      { id: 'S018', name: 'Pooja Reddy', program: 'B.E. Computer', sem: 'II' },
+      { id: 'S019', name: 'Siddharth Nair', program: 'B.E. Computer', sem: 'II' },
+      { id: 'S020', name: 'Tanvi Kulkarni', program: 'B.E. Computer', sem: 'II' },
+    ],
+    memoPrefix: 'MM-2026-S', startIdx: 0, baseSgpa: 6.8, baseCgpa: 6.5,
+  },
+};
+
+let selectedMemoExam = 'Sem IV Regular Apr 2026';
+
+function memoExamKey(studentId) {
+  return selectedMemoExam + '|' + studentId;
+}
+
+function getMemoExamConfig() {
+  return memoExams[selectedMemoExam] || memoExams['Sem IV Regular Apr 2026'];
+}
+
+function changeMemoExam(value) {
+  selectedMemoExam = value;
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  } else {
+    showPage('marks-memo');
+  }
+}
+
+function downloadMarksMemo(studentId, studentName, memoNo, sgpa, cgpa) {
+  const content = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Marks Memo - ${memoNo}</title>
+<style>
+  body { font-family: 'Times New Roman', serif; margin: 40px; color: #1e293b; }
+  .header { text-align: center; border-bottom: 3px double #2563eb; padding-bottom: 16px; margin-bottom: 24px; }
+  .header h1 { margin: 0; font-size: 22px; color: #2563eb; }
+  .header h2 { margin: 4px 0; font-size: 16px; font-weight: 400; }
+  .header p { margin: 2px 0; font-size: 13px; color: #64748b; }
+  .title { text-align: center; font-size: 18px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-size: 13px; }
+  th { background: #f1f5f9; font-weight: 600; }
+  .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #cbd5e1; font-size: 12px; color: #64748b; }
+  .qr-placeholder { float: right; width: 80px; height: 80px; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #94a3b8; margin-left: 16px; }
+  .signature { display: flex; justify-content: space-between; margin-top: 32px; }
+  .signature div { text-align: center; }
+  .signature .line { width: 180px; border-top: 1px solid #1e293b; margin-top: 36px; padding-top: 6px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>EXAMINATION ERP</h1>
+  <h2>College of Engineering</h2>
+  <p>Autonomous Institute Affiliated to University</p>
+</div>
+<div class="title">Statement of Marks — Grade Card</div>
+<div class="qr-placeholder">QR Code</div>
+<table>
+  <tr><td style="font-weight:600;width:140px">Student Name</td><td>${studentName}</td></tr>
+  <tr><td style="font-weight:600">Student ID</td><td>${studentId}</td></tr>
+  <tr><td style="font-weight:600">Program</td><td>B.E. Computer Engineering</td></tr>
+  <tr><td style="font-weight:600">Semester</td><td>IV (Regular) — Apr 2026</td></tr>
+  <tr><td style="font-weight:600">Memo Number</td><td>${memoNo}</td></tr>
+</table>
+<table>
+  <tr><th>Subject Code</th><th>Subject Name</th><th>Credits</th><th>Grade</th><th>Grade Points</th></tr>
+  <tr><td>CS401</td><td>Data Structures & Algorithms</td><td>4</td><td>A</td><td>9</td></tr>
+  <tr><td>CS402</td><td>Database Management Systems</td><td>4</td><td>B+</td><td>8</td></tr>
+  <tr><td>CS403</td><td>Operating Systems</td><td>3</td><td>A</td><td>9</td></tr>
+  <tr><td>CS404</td><td>Computer Networks</td><td>3</td><td>B+</td><td>8</td></tr>
+  <tr><td>CS405</td><td>Software Engineering</td><td>3</td><td>A</td><td>9</td></tr>
+  <tr><td>CS406</td><td>Mathematics IV</td><td>3</td><td>B</td><td>7</td></tr>
+</table>
+<table>
+  <tr><td style="font-weight:600">SGPA</td><td>${sgpa}</td><td style="font-weight:600">CGPA</td><td>${cgpa}</td></tr>
+  <tr><td style="font-weight:600">Total Credits</td><td>20</td><td style="font-weight:600">Result</td><td>PASS</td></tr>
+</table>
+<div class="signature">
+  <div><div class="line">Class Coordinator</div></div>
+  <div><div class="line">Exam Branch</div></div>
+  <div><div class="line">Principal</div></div>
+</div>
+<div class="footer">This is a computer-generated document. Generated on ${new Date().toLocaleDateString()} · Memo: ${memoNo}</div>
+</body>
+</html>`;
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${memoNo}_${studentName.replace(/\s+/g, '_')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function generateMarksMemo(studentId) {
+  const exam = getMemoExamConfig();
+  const st = exam.students.find(s => s.id === studentId);
+  if (!st) return;
+  const idx = exam.students.indexOf(st);
+  const memoNo = exam.memoPrefix + String(idx + 1 + exam.startIdx).padStart(3, '0');
+  const sgpa = (exam.baseSgpa + (idx % 5) * 0.4).toFixed(1);
+  const cgpa = (exam.baseCgpa + (idx % 5) * 0.35).toFixed(1);
+  data.memosGenerated[memoExamKey(studentId)] = { memoNo, sgpa, cgpa, generatedAt: new Date().toISOString() };
+  downloadMarksMemo(studentId, st.name, memoNo, sgpa, cgpa);
+  showToast('Marks memo generated for ' + st.name);
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  }
+}
+
+function generateAllMemos() {
+  const exam = getMemoExamConfig();
+  exam.students.forEach(st => {
+    const key = memoExamKey(st.id);
+    if (!data.memosGenerated[key]) {
+      const idx = exam.students.indexOf(st);
+      const memoNo = exam.memoPrefix + String(idx + 1 + exam.startIdx).padStart(3, '0');
+      const sgpa = (exam.baseSgpa + (idx % 5) * 0.4).toFixed(1);
+      const cgpa = (exam.baseCgpa + (idx % 5) * 0.35).toFixed(1);
+      data.memosGenerated[key] = { memoNo, sgpa, cgpa, generatedAt: new Date().toISOString() };
+    }
+  });
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  }
+  showToast('All marks memos generated successfully');
+}
+
+function downloadMemo(studentId) {
+  const st = getMemoExamConfig().students.find(s => s.id === studentId);
+  if (!st) return;
+  const gen = data.memosGenerated[memoExamKey(studentId)];
+  if (!gen) return;
+  downloadMarksMemo(studentId, st.name, gen.memoNo, gen.sgpa, gen.cgpa);
+}
+
 function renderMarksMemo() {
   const isAutonomous = currentMode === 'autonomous';
   const isAffiliated = currentMode === 'affiliated';
@@ -443,17 +685,32 @@ function renderMarksMemo() {
     : isAffiliated
       ? 'Upload the university-issued marks memo and map it to students.'
       : 'Generate memos in ERP for internal/practical exams; upload the university memo for external subjects.';
+  const exam = getMemoExamConfig();
   const generateBtn = !isAffiliated
-    ? `<button class="btn btn-primary btn-sm" onclick="openModal('Generate All Memos','<p>Generate official marks memos for all 248 students? This will create PDFs with memo numbers, QR codes, and digital signatures.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'>Generate All</button>')"><i class="fas fa-magic"></i> Generate All Memos</button>`
+    ? `<button class="btn btn-primary btn-sm" onclick="openModal('Generate All Memos','<p>Generate official marks memos for all ${exam.students.length} students? This will create PDFs with memo numbers, QR codes, and digital signatures.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();generateAllMemos()\\'><i class=\\'fas fa-magic\\'></i> Generate All</button>')"><i class="fas fa-magic"></i> Generate All Memos</button>`
     : '';
   const uploadBtn = !isAutonomous
     ? `<button class="btn ${isAffiliated?'btn-primary':''} btn-sm" onclick="showActionModal('Upload University Memo','Select the university-issued marks memo file to upload and map to students.', {icon:'fa-upload', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-upload"></i> Upload University Memo</button>`
     : '';
+  const examOptions = Object.keys(memoExams).map(key =>
+    `<option value="${key}" ${key === selectedMemoExam ? 'selected' : ''}>${memoExams[key].label}</option>`
+  ).join('');
+  const memoRows = exam.students.map((st, idx) => {
+    const memoNo = exam.memoPrefix + String(idx + 1 + exam.startIdx).padStart(3, '0');
+    const sgpa = (exam.baseSgpa + (idx % 5) * 0.4).toFixed(1);
+    const cgpa = (exam.baseCgpa + (idx % 5) * 0.35).toFixed(1);
+    const generated = !!(data.memosGenerated[memoExamKey(st.id)]);
+    const action = generated
+      ? `<button class="btn btn-sm" onclick="downloadMemo('${st.id}')"><i class="fas fa-download"></i> PDF</button>`
+      : `<button class="btn btn-sm" onclick="showActionModal('Generate Marks Memo','Generate the official marks memo for ${st.name} (${st.id}) with memo number, QR code, and digital signature?', {icon:'fa-id-card', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>generateMarksMemo('${st.id}')})">Generate</button>`;
+    const statusBadge = generated ? '<span class="badge badge-success">Generated</span>' : '<span class="badge badge-warning">Pending</span>';
+    return `<tr><td>${st.name} (${st.id})</td><td>${memoNo}</td><td>${sgpa}</td><td>${cgpa}</td><td>${statusBadge}</td><td>${action}</td></tr>`;
+  }).join('');
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
+        <select class="form-control" onchange="changeMemoExam(this.value)">${examOptions}</select>
         ${generateBtn}
         ${uploadBtn}
         <button class="btn btn-sm" style="margin-left:auto" onclick="showActionModal('Publish to Portal','Generated marks memos are now published and downloadable from the student portal.', {icon:'fa-check-circle', iconColor:'var(--success)', showCancel:false, confirmLabel:'OK'})"><i class="fas fa-check"></i> Publish to Portal</button>
@@ -464,10 +721,7 @@ function renderMarksMemo() {
           <div class="table-wrap">
             <table>
               <tr><th>Student</th><th>Memo No.</th><th>SGPA</th><th>CGPA</th><th>Status</th><th></th></tr>
-              <tr><td>Aarav Sharma (S001)</td><td>MM-2026-001</td><td>9.2</td><td>8.9</td><td><span class="badge badge-success">Generated</span></td><td><button class="btn btn-sm" onclick="showActionModal('Marks Memo MM-2026-001','Downloading the marks memo / grade card PDF for Aarav Sharma (SGPA 9.2, CGPA 8.9).', {icon:'fa-download', confirmLabel:'Download PDF', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> PDF</button></td></tr>
-              <tr><td>Priya Patel (S002)</td><td>MM-2026-002</td><td>9.4</td><td>9.1</td><td><span class="badge badge-success">Generated</span></td><td><button class="btn btn-sm" onclick="showActionModal('Marks Memo MM-2026-002','Downloading the marks memo / grade card PDF for Priya Patel (SGPA 9.4, CGPA 9.1).', {icon:'fa-download', confirmLabel:'Download PDF', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> PDF</button></td></tr>
-              <tr><td>Rahul Verma (S003)</td><td>MM-2026-003</td><td>7.8</td><td>7.5</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-sm" onclick="showActionModal('Generate Marks Memo','Generate the official marks memo for Rahul Verma (S003) with memo number, QR code, and digital signature?', {icon:'fa-id-card', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('marks-memo')})">Generate</button></td></tr>
-              <tr><td>Sneha Reddy (S004)</td><td>MM-2026-004</td><td>8.6</td><td>8.2</td><td><span class="badge badge-success">Generated</span></td><td><button class="btn btn-sm" onclick="showActionModal('Marks Memo MM-2026-004','Downloading the marks memo / grade card PDF for Sneha Reddy (SGPA 8.6, CGPA 8.2).', {icon:'fa-download', confirmLabel:'Download PDF', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> PDF</button></td></tr>
+              ${memoRows}
             </table>
           </div>
         </div>
@@ -479,9 +733,67 @@ function renderMarksMemo() {
 // ============================================================
 // REVALUATION
 // ============================================================
+const revalExams = {
+  'Sem IV Regular Apr 2026': {
+    revaluationApplications: [
+      { student: 'Rahul Verma', subject: 'OS', marks: 38, feePaid: true, evaluator: '—', status: 'Pending', statusClass: 'badge-warning' },
+      { student: 'Arjun Desai', subject: 'DS', marks: 42, feePaid: true, evaluator: 'Dr. Neha Shah', status: 'In Progress', statusClass: 'badge-info' },
+      { student: 'Divya Kulkarni', subject: 'SE', marks: 35, feePaid: true, evaluator: 'Dr. Meena Iyer', status: 'Revised: 48', statusClass: 'badge-success' },
+      { student: 'Vikram Singh', subject: 'Maths IV', marks: 28, feePaid: false, evaluator: '—', status: 'Fee Pending', statusClass: 'badge-danger' },
+    ],
+    universityRevaluationTracking: [
+      { student: 'Rahul Verma', subject: 'OS', marks: 38, feePaid: true, uniStatus: 'Submitted to University', uniStatusClass: 'badge-warning', revised: '—' },
+      { student: 'Arjun Desai', subject: 'DS', marks: 42, feePaid: true, uniStatus: 'Awaiting University', uniStatusClass: 'badge-info', revised: '—' },
+      { student: 'Divya Kulkarni', subject: 'SE', marks: 35, feePaid: true, uniStatus: 'Revised Result Received', uniStatusClass: 'badge-success', revised: '48' },
+      { student: 'Vikram Singh', subject: 'Maths IV', marks: 28, feePaid: false, uniStatus: 'Fee Pending', uniStatusClass: 'badge-danger', revised: '—' },
+    ],
+  },
+  'Sem VI Regular Apr 2026': {
+    revaluationApplications: [
+      { student: 'Neha Sharma', subject: 'CN', marks: 36, feePaid: true, evaluator: '—', status: 'Pending', statusClass: 'badge-warning' },
+      { student: 'Karan Singh', subject: 'SE', marks: 40, feePaid: true, evaluator: 'Prof. Rajesh Pillai', status: 'In Progress', statusClass: 'badge-info' },
+      { student: 'Rohit Deshmukh', subject: 'DBMS', marks: 32, feePaid: true, evaluator: 'Dr. Sunita Rao', status: 'Revised: 45', statusClass: 'badge-success' },
+    ],
+    universityRevaluationTracking: [
+      { student: 'Neha Sharma', subject: 'CN', marks: 36, feePaid: true, uniStatus: 'Submitted to University', uniStatusClass: 'badge-warning', revised: '—' },
+      { student: 'Karan Singh', subject: 'SE', marks: 40, feePaid: true, uniStatus: 'Awaiting University', uniStatusClass: 'badge-info', revised: '—' },
+      { student: 'Rohit Deshmukh', subject: 'DBMS', marks: 32, feePaid: true, uniStatus: 'Revised Result Received', uniStatusClass: 'badge-success', revised: '45' },
+    ],
+  },
+  'Sem II Supplementary Jan 2026': {
+    revaluationApplications: [
+      { student: 'Akash Tiwari', subject: 'Maths I', marks: 22, feePaid: false, evaluator: '—', status: 'Fee Pending', statusClass: 'badge-danger' },
+      { student: 'Pooja Reddy', subject: 'Physics', marks: 26, feePaid: true, evaluator: 'Dr. Meena Iyer', status: 'In Progress', statusClass: 'badge-info' },
+    ],
+    universityRevaluationTracking: [
+      { student: 'Akash Tiwari', subject: 'Maths I', marks: 22, feePaid: false, uniStatus: 'Fee Pending', uniStatusClass: 'badge-danger', revised: '—' },
+      { student: 'Pooja Reddy', subject: 'Physics', marks: 26, feePaid: true, uniStatus: 'Awaiting University', uniStatusClass: 'badge-info', revised: '—' },
+    ],
+  },
+};
+
+let selectedRevalExam = 'Sem IV Regular Apr 2026';
+
+function getRevalConfig() {
+  return revalExams[selectedRevalExam] || revalExams['Sem IV Regular Apr 2026'];
+}
+
+function changeRevalExam(value) {
+  selectedRevalExam = value;
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  } else {
+    showPage('revaluation');
+  }
+}
+
 function renderRevaluation() {
+  const revalOptions = Object.keys(revalExams).map(key =>
+    `<option value="${key}" ${key === selectedRevalExam ? 'selected' : ''}>${revalExams[key].label || key}</option>`
+  ).join('');
   if (currentMode === 'affiliated') {
-    const list = data.universityRevaluationTracking;
+    const cfg = getRevalConfig();
+    const list = cfg.universityRevaluationTracking;
     const awaiting = list.filter(r => r.uniStatus === 'Awaiting University' || r.uniStatus === 'Submitted to University').length;
     const received = list.filter(r => r.uniStatus === 'Revised Result Received').length;
     const rows = list.map((r, i) => {
@@ -496,7 +808,7 @@ function renderRevaluation() {
       <div class="page-content">
         <div class="alert alert-info"><i class="fas fa-info-circle"></i> Affiliated mode: Track the student's revaluation application submitted to the university. Update the record once the university releases the revised result.</div>
         <div class="filter-bar">
-          <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
+          <select class="form-control" onchange="changeRevalExam(this.value)">${revalOptions}</select>
           <span class="chip">${list.length} Applications</span>
           <span class="chip">${awaiting} Awaiting University</span>
           <span class="chip">${received} Revised Result Received</span>
@@ -519,7 +831,8 @@ function renderRevaluation() {
   const modeAlert = currentMode === 'hybrid'
     ? 'Hybrid mode: Full revaluation cycle in ERP for internal/practical subjects; track university revaluation for external subjects.'
     : 'Students can apply for revaluation. Full cycle management in autonomous mode.';
-  const list = data.revaluationApplications;
+  const cfg = getRevalConfig();
+  const list = cfg.revaluationApplications;
   const inProgress = list.filter(r => r.status === 'In Progress').length;
   const completed = list.filter(r => r.status.startsWith('Revised')).length;
   const rows = list.map(r => {
@@ -536,7 +849,7 @@ function renderRevaluation() {
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
       <div class="filter-bar">
-        <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
+        <select class="form-control" onchange="changeRevalExam(this.value)">${revalOptions}</select>
         <span class="chip">${list.length} Applications</span>
         <span class="chip">${inProgress} In Progress</span>
         <span class="chip">${completed} Completed</span>
@@ -558,24 +871,426 @@ function renderRevaluation() {
 }
 
 // ============================================================
+// ============================================================
+// STUDENT PAGES
+// ============================================================
+const studentSemData = {
+  'Sem I Regular Apr 2024': {
+    label: 'Sem I (1st Year)',
+    subjects: [
+      { code: 'MA101', name: 'Engineering Maths I', max: 100, obtained: 72, grade: 'B+', credits: 4 },
+      { code: 'PH101', name: 'Engineering Physics', max: 100, obtained: 68, grade: 'B', credits: 4 },
+      { code: 'CY101', name: 'Engineering Chemistry', max: 100, obtained: 75, grade: 'B+', credits: 4 },
+      { code: 'CS101', name: 'Programming for Problem Solving', max: 100, obtained: 81, grade: 'A', credits: 3 },
+      { code: 'EN101', name: 'English Communication', max: 100, obtained: 85, grade: 'A', credits: 3 },
+      { code: 'EG101', name: 'Engineering Graphics', max: 100, obtained: 70, grade: 'B+', credits: 3 },
+    ], sgpa: 7.6, cgpa: 7.6,
+  },
+  'Sem II Regular Jul 2024': {
+    label: 'Sem II (1st Year)',
+    subjects: [
+      { code: 'MA201', name: 'Engineering Maths II', max: 100, obtained: 74, grade: 'B+', credits: 4 },
+      { code: 'CS201', name: 'Programming in C', max: 100, obtained: 78, grade: 'B+', credits: 4 },
+      { code: 'EC201', name: 'Digital Electronics', max: 100, obtained: 71, grade: 'B+', credits: 4 },
+      { code: 'EE201', name: 'Basic Electrical Engg.', max: 100, obtained: 65, grade: 'B', credits: 3 },
+      { code: 'EN201', name: 'Communication Skills', max: 100, obtained: 88, grade: 'A', credits: 3 },
+      { code: 'EV201', name: 'Environmental Studies', max: 100, obtained: 82, grade: 'A', credits: 3 },
+    ], sgpa: 7.7, cgpa: 7.65,
+  },
+  'Sem III Regular Dec 2024': {
+    label: 'Sem III (2nd Year)',
+    subjects: [
+      { code: 'MA301', name: 'Engineering Maths III', max: 100, obtained: 70, grade: 'B+', credits: 4 },
+      { code: 'CS301', name: 'Data Structures', max: 100, obtained: 80, grade: 'A', credits: 4 },
+      { code: 'CS302', name: 'Object Oriented Programming', max: 100, obtained: 84, grade: 'A', credits: 4 },
+      { code: 'CS303', name: 'Computer Organization', max: 100, obtained: 72, grade: 'B+', credits: 3 },
+      { code: 'CS304', name: 'Microprocessors', max: 100, obtained: 66, grade: 'B', credits: 3 },
+      { code: 'CS305', name: 'Discrete Maths', max: 100, obtained: 76, grade: 'B+', credits: 3 },
+    ], sgpa: 7.8, cgpa: 7.7,
+  },
+  'Sem IV Regular Apr 2025': {
+    label: 'Sem IV (2nd Year)',
+    subjects: [
+      { code: 'CS401', name: 'DS & Algorithms', max: 100, obtained: 78, grade: 'B+', credits: 4 },
+      { code: 'CS402', name: 'Computer Networks', max: 100, obtained: 82, grade: 'A', credits: 4 },
+      { code: 'CS403', name: 'DBMS', max: 100, obtained: 85, grade: 'A', credits: 4 },
+      { code: 'CS404', name: 'Software Engg.', max: 100, obtained: 74, grade: 'B+', credits: 3 },
+      { code: 'CS405', name: 'Operating Systems', max: 100, obtained: 68, grade: 'B', credits: 3 },
+      { code: 'CS406', name: 'Web Tech', max: 100, obtained: 90, grade: 'A+', credits: 3 },
+    ], sgpa: 8.2, cgpa: 7.8,
+  },
+  'Sem V Regular Dec 2025': {
+    label: 'Sem V (3rd Year)',
+    subjects: [
+      { code: 'CS501', name: 'Artificial Intelligence', max: 100, obtained: 86, grade: 'A', credits: 4 },
+      { code: 'CS502', name: 'Compiler Design', max: 100, obtained: 72, grade: 'B+', credits: 4 },
+      { code: 'CS503', name: 'Computer Graphics', max: 100, obtained: 78, grade: 'B+', credits: 4 },
+      { code: 'CS504', name: 'Cryptography', max: 100, obtained: 80, grade: 'A', credits: 3 },
+      { code: 'CS505', name: 'Data Mining', max: 100, obtained: 84, grade: 'A', credits: 3 },
+      { code: 'CS506', name: 'Human Computer Interaction', max: 100, obtained: 88, grade: 'A', credits: 3 },
+    ], sgpa: 8.4, cgpa: 7.95,
+  },
+  'Sem VI Regular Apr 2026': {
+    label: 'Sem VI (3rd Year)',
+    subjects: [
+      { code: 'CS601', name: 'Machine Learning', max: 100, obtained: 82, grade: 'A', credits: 4 },
+      { code: 'CS602', name: 'Cloud Computing', max: 100, obtained: 80, grade: 'A', credits: 4 },
+      { code: 'CS603', name: 'Big Data Analytics', max: 100, obtained: 76, grade: 'B+', credits: 4 },
+      { code: 'CS604', name: 'Internet of Things', max: 100, obtained: 84, grade: 'A', credits: 3 },
+      { code: 'CS605', name: 'Deep Learning', max: 100, obtained: 78, grade: 'B+', credits: 3 },
+      { code: 'CS606', name: 'Blockchain Tech', max: 100, obtained: 88, grade: 'A', credits: 3 },
+    ], sgpa: 8.3, cgpa: 8.0,
+  },
+};
+
+let selectedStudentSem = 'Sem VI Regular Apr 2026';
+
+function changeStudentSem(value) {
+  selectedStudentSem = value;
+  showPage('student-result');
+}
+
+function renderStudentResult() {
+  const sem = studentSemData[selectedStudentSem] || studentSemData['Sem VI Regular Apr 2026'];
+  const examOpts = Object.keys(studentSemData).map(key =>
+    `<option value="${key}" ${key === selectedStudentSem ? 'selected' : ''}>${studentSemData[key].label}</option>`
+  ).join('');
+  const rows = sem.subjects.map(m => {
+    let gradeColor = 'var(--text)';
+    if (m.grade.startsWith('A')) gradeColor = '#059669';
+    else if (m.grade.startsWith('B+')) gradeColor = '#0284c7';
+    else if (m.grade === 'B') gradeColor = '#ca8a04';
+    else if (m.grade === 'C') gradeColor = '#dc2626';
+    return `<tr><td style="font-weight:500">${m.code}</td><td>${m.name}</td><td class="text-center">${m.max}</td><td class="text-center" style="font-weight:600">${m.obtained}</td><td class="text-center"><span style="color:${gradeColor};font-weight:700">${m.grade}</span></td><td class="text-center">${m.credits}</td></tr>`;
+  }).join('');
+  const totalMax = sem.subjects.reduce((s, m) => s + m.max, 0);
+  const totalObtained = sem.subjects.reduce((s, m) => s + m.obtained, 0);
+  const totalCredits = sem.subjects.reduce((s, m) => s + m.credits, 0);
+  const pct = Math.round((totalObtained / totalMax) * 100);
+  const sgpaPct = Math.min(100, Math.round((sem.sgpa / 10) * 100));
+  return `
+    <div class="page-content">
+      <div class="card" style="overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1e40af,#1d4ed8);color:#fff;padding:24px 28px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <div style="display:flex;align-items:center;gap:16px">
+              <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700">AS</div>
+              <div><div style="font-size:20px;font-weight:700">Aarav Sharma</div><div style="font-size:13px;opacity:.85">S001 · B.E. Computer Engineering · <strong>${sem.label}</strong></div></div>
+            </div>
+            <select class="form-control sem-select" onchange="changeStudentSem(this.value)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);max-width:220px">${examOpts}</select>
+          </div>
+        </div>
+        <style>.sem-select option{color:#1e293b;background:#fff}.sem-select option:checked{background:#e0e7ff}</style>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px">
+            <div class="stat-card" style="position:relative;overflow:hidden">
+              <div class="label">SGPA — ${sem.label}</div>
+              <div style="display:flex;align-items:baseline;gap:8px"><span class="value" style="color:var(--primary)">${sem.sgpa}</span><span style="font-size:13px;color:var(--text-muted)">/ 10</span></div>
+              <div style="margin-top:8px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:${sgpaPct}%;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:3px"></div></div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Cumulative CGPA</div>
+              <div style="display:flex;align-items:baseline;gap:8px"><span class="value" style="color:#059669">${sem.cgpa}</span><span style="font-size:13px;color:var(--text-muted)">/ 10</span></div>
+              <div class="sub">Across all semesters</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Total Marks</div>
+              <div style="display:flex;align-items:baseline;gap:8px"><span class="value" style="color:#ca8a04">${totalObtained}</span><span style="font-size:13px;color:var(--text-muted)">/ ${totalMax}</span></div>
+              <div class="sub">${pct}% aggregate</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Credits & Status</div>
+              <div style="display:flex;align-items:baseline;gap:8px"><span class="value" style="color:var(--primary)">${totalCredits}</span></div>
+              <div><span class="badge badge-success" style="font-size:13px;padding:3px 10px"><i class="fas fa-check-circle"></i> PASS</span></div>
+            </div>
+          </div>
+          <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px"><i class="fas fa-book-open"></i> Subject-wise Performance</h4>
+          <div class="table-wrap">
+            <table style="font-size:13px">
+              <tr><th>Code</th><th>Subject</th><th class="text-center">Max</th><th class="text-center">Obtained</th><th class="text-center">Grade</th><th class="text-center">Credits</th></tr>
+              ${rows}
+              <tr style="font-weight:700;background:#f8fafc"><td colspan="2">Total</td><td class="text-center">${totalMax}</td><td class="text-center" style="color:var(--primary)">${totalObtained}</td><td class="text-center"></td><td class="text-center">${totalCredits}</td></tr>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted)">
+              <span><span style="color:#059669;font-weight:700">A+, A</span> — Excellent</span>
+              <span><span style="color:#0284c7;font-weight:700">B+</span> — Very Good</span>
+              <span><span style="color:#ca8a04;font-weight:700">B</span> — Good</span>
+              <span><span style="color:#dc2626;font-weight:700">C, D</span> — Needs Improvement</span>
+            </div>
+            <button class="btn btn-primary" onclick="downloadStudentMarksMemo()" style="padding:10px 24px"><i class="fas fa-download"></i> Download Marks Memo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function downloadStudentMarksMemo() {
+  const sem = studentSemData[selectedStudentSem] || studentSemData['Sem VI Regular Apr 2026'];
+  const memoPrefixMap = {
+    'Sem I Regular Apr 2024': 'MM-2024-1',
+    'Sem II Regular Jul 2024': 'MM-2024-2',
+    'Sem III Regular Dec 2024': 'MM-2024-3',
+    'Sem IV Regular Apr 2025': 'MM-2025-1',
+    'Sem V Regular Dec 2025': 'MM-2025-2',
+    'Sem VI Regular Apr 2026': 'MM-2026-3',
+  };
+  const memoNo = (memoPrefixMap[selectedStudentSem] || 'MM-2026') + '-001';
+  downloadMarksMemo('S001', 'Aarav Sharma', memoNo, sem.sgpa, sem.cgpa);
+}
+
+const studentRevalApplications = [
+  { subject: 'Operating Systems', obtained: 68, date: '15 Apr 2026', status: 'In Progress', statusClass: 'badge-warning', revised: '—' },
+  { subject: 'Data Structures', obtained: 48, date: '10 Apr 2026', status: 'Completed', statusClass: 'badge-success', revised: 48 },
+];
+
+function applyStudentRevaluation(subject, obtained) {
+  showActionModal('Apply for Revaluation',
+    `Apply for revaluation of ${subject} (obtained: ${obtained})? Fee of ₹500 will be added to your account.`,
+    {
+      icon: 'fa-redo-alt', confirmLabel: 'Apply & Pay', confirmIcon: 'fa-check',
+      onConfirm: function () {
+        const d = new Date();
+        const today = d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getFullYear();
+        studentRevalApplications.unshift({ subject, obtained, date: today, status: 'Applied', statusClass: 'badge-info', revised: '—' });
+        showPage('student-revaluation');
+        showToast('Revaluation applied for ' + subject);
+      }
+    }
+  );
+}
+
+function renderStudentRevaluation() {
+  const sem = studentSemData[selectedStudentSem] || studentSemData['Sem VI Regular Apr 2026'];
+  const applyRows = sem.subjects.map(s =>
+    `<tr><td>${s.name}</td><td>${s.obtained}</td><td><button class="btn btn-sm btn-primary" onclick="applyStudentRevaluation('${s.name.replace(/'/g, "\\'")}',${s.obtained})">Apply</button></td></tr>`
+  ).join('');
+  const appRows = studentRevalApplications.map(a =>
+    `<tr><td>${a.subject}</td><td>${a.obtained}</td><td>${a.date}</td><td><span class="badge ${a.statusClass}">${a.status}</span></td><td>${a.revised}</td></tr>`
+  ).join('');
+  return `
+    <div class="page-content">
+      <div class="card">
+        <div class="card-header"><h3><i class="fas fa-redo-alt"></i> Apply for Revaluation</h3></div>
+        <div class="card-body">
+          <div class="alert alert-info"><i class="fas fa-info-circle"></i> Submit revaluation applications for your subjects. Fee: ₹500 per subject. Showing subjects from <strong>${sem.label}</strong>.</div>
+          <div class="table-wrap">
+            <table>
+              <tr><th>Subject</th><th>Obtained</th><th>Apply</th></tr>
+              ${applyRows}
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><h3><i class="fas fa-history"></i> My Applications</h3></div>
+        <div class="card-body">
+          ${appRows ? `
+          <div class="table-wrap">
+            <table>
+              <tr><th>Subject</th><th>Original Marks</th><th>Application Date</th><th>Status</th><th>Revised Marks</th></tr>
+              ${appRows}
+            </table>
+          </div>` : '<p class="text-muted text-center" style="padding:20px">No revaluation applications yet.</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// ============================================================
 // REPORTS
 // ============================================================
+const reportsExams = {
+  'Sem IV Regular Apr 2026': {
+    reports: {
+      'Eligible Student List': { category: 'Pre-Exam', lastGenerated: '05 Apr 2026' },
+      'Registered Student List': { category: 'Pre-Exam', lastGenerated: '06 Apr 2026' },
+      'Exam Timetable': { category: 'Pre-Exam', lastGenerated: '07 Apr 2026' },
+      'Hall Ticket List': { category: 'Pre-Exam', lastGenerated: '08 Apr 2026' },
+      'Seating Plan': { category: 'Pre-Exam', lastGenerated: '08 Apr 2026' },
+      'Attendance Report (D-Form)': { category: 'In-Exam', lastGenerated: '10 Apr 2026' },
+      'Answer Sheet Report': { category: 'In-Exam', lastGenerated: '10 Apr 2026' },
+      'Bundle Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Marks Entry Status': { category: 'Post-Exam', lastGenerated: null },
+      'Result Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Pass / Fail Analysis': { category: 'Analytics', lastGenerated: null },
+      'Backlog Report': { category: 'Analytics', lastGenerated: null },
+    },
+  },
+  'Sem VI Regular Apr 2026': {
+    reports: {
+      'Eligible Student List': { category: 'Pre-Exam', lastGenerated: '03 Apr 2026' },
+      'Registered Student List': { category: 'Pre-Exam', lastGenerated: '04 Apr 2026' },
+      'Exam Timetable': { category: 'Pre-Exam', lastGenerated: '05 Apr 2026' },
+      'Hall Ticket List': { category: 'Pre-Exam', lastGenerated: '06 Apr 2026' },
+      'Seating Plan': { category: 'Pre-Exam', lastGenerated: '06 Apr 2026' },
+      'Attendance Report (D-Form)': { category: 'In-Exam', lastGenerated: '08 Apr 2026' },
+      'Answer Sheet Report': { category: 'In-Exam', lastGenerated: '08 Apr 2026' },
+      'Bundle Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Marks Entry Status': { category: 'Post-Exam', lastGenerated: null },
+      'Result Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Pass / Fail Analysis': { category: 'Analytics', lastGenerated: null },
+      'Backlog Report': { category: 'Analytics', lastGenerated: null },
+    },
+  },
+  'Sem II Supplementary Jan 2026': {
+    reports: {
+      'Eligible Student List': { category: 'Pre-Exam', lastGenerated: '12 Jan 2026' },
+      'Registered Student List': { category: 'Pre-Exam', lastGenerated: '14 Jan 2026' },
+      'Exam Timetable': { category: 'Pre-Exam', lastGenerated: '15 Jan 2026' },
+      'Hall Ticket List': { category: 'Pre-Exam', lastGenerated: '16 Jan 2026' },
+      'Seating Plan': { category: 'Pre-Exam', lastGenerated: '16 Jan 2026' },
+      'Attendance Report (D-Form)': { category: 'In-Exam', lastGenerated: '20 Jan 2026' },
+      'Answer Sheet Report': { category: 'In-Exam', lastGenerated: '20 Jan 2026' },
+      'Bundle Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Marks Entry Status': { category: 'Post-Exam', lastGenerated: null },
+      'Result Summary': { category: 'Post-Exam', lastGenerated: null },
+      'Pass / Fail Analysis': { category: 'Analytics', lastGenerated: null },
+      'Backlog Report': { category: 'Analytics', lastGenerated: null },
+    },
+  },
+};
+
+let selectedReportsExam = 'Sem IV Regular Apr 2026';
+let selectedReportsPhase = 'All Phases';
+
+function changeReportsExam(value) {
+  selectedReportsExam = value;
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  } else {
+    showPage('reports');
+  }
+}
+
+function changeReportsPhase(value) {
+  selectedReportsPhase = value;
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  } else {
+    showPage('reports');
+  }
+}
+
+function downloadReport(reportName) {
+  const exam = reportsExams[selectedReportsExam];
+  const info = exam.reports[reportName];
+  const content = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>${reportName} - ${selectedReportsExam}</title>
+<style>body{font-family:Arial,sans-serif;margin:40px;color:#1e293b}h1{color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:8px}</style>
+</head><body>
+<h1>${reportName}</h1>
+<p><strong>Exam:</strong> ${selectedReportsExam}</p>
+<p><strong>Category:</strong> ${info.category}</p>
+<p><strong>Generated:</strong> ${info.lastGenerated || new Date().toLocaleDateString()}</p>
+<hr>
+<p>This is a computer-generated report from the Examination ERP system.</p>
+<p>Generated on: ${new Date().toLocaleString()}</p>
+</body></html>`;
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${reportName.replace(/\s+/g, '_')}_${selectedReportsExam.replace(/\s+/g, '_')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportReports(type) {
+  const exam = reportsExams[selectedReportsExam];
+  let reports = Object.entries(exam.reports);
+  if (selectedReportsPhase !== 'All Phases') {
+    reports = reports.filter(([_, info]) => info.category === selectedReportsPhase);
+  }
+  let tableRows = reports.map(([name, info]) =>
+    `<tr><td>${name}</td><td>${info.category}</td><td>${info.lastGenerated || 'Not generated'}</td></tr>`
+  ).join('');
+  const content = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Reports Export - ${selectedReportsExam}</title>
+<style>body{font-family:Arial,sans-serif;margin:40px;color:#1e293b}h1{color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #cbd5e1;padding:8px 12px;text-align:left;font-size:13px}th{background:#f1f5f9;font-weight:600}</style>
+</head><body>
+<h1>${type} Export — ${selectedReportsExam}</h1>
+<p><strong>Phase filter:</strong> ${selectedReportsPhase}</p>
+<p><strong>Exported on:</strong> ${new Date().toLocaleString()}</p>
+<table>
+<tr><th>Report Name</th><th>Category</th><th>Last Generated</th></tr>
+${tableRows}
+</table>
+<hr>
+<p><em>Total reports: ${reports.length}</em></p>
+<p>This is a computer-generated ${type} export from the Examination ERP system.</p>
+</body></html>`;
+  const blob = new Blob([content], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ext = type === 'Excel' ? '_Excel' : '_PDF';
+  a.download = `Reports_${selectedReportsExam.replace(/\s+/g, '_')}${ext}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(type + ' export completed for ' + selectedReportsExam);
+}
+
+function generateReport(reportName) {
+  const exam = reportsExams[selectedReportsExam];
+  if (exam.reports[reportName]) {
+    exam.reports[reportName].lastGenerated = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  if (typeof renderCurrentPage === 'function') {
+    renderCurrentPage();
+  } else {
+    showPage('reports');
+  }
+  showToast(reportName + ' generated successfully');
+}
+
 function renderReports() {
+  const examOptions = Object.keys(reportsExams).map(key =>
+    `<option value="${key}" ${key === selectedReportsExam ? 'selected' : ''}>${key}</option>`
+  ).join('');
+  const exam = reportsExams[selectedReportsExam];
+  const phaseOptions = ['All Phases', 'Pre-Exam', 'In-Exam', 'Post-Exam', 'Analytics'].map(p =>
+    `<option value="${p}" ${p === selectedReportsPhase ? 'selected' : ''}>${p}</option>`
+  ).join('');
+  let filteredReports = Object.entries(exam.reports);
+  if (selectedReportsPhase !== 'All Phases') {
+    filteredReports = filteredReports.filter(([_, info]) => info.category === selectedReportsPhase);
+  }
+  const preCount = Object.values(exam.reports).filter(r => r.category === 'Pre-Exam').length;
+  const inCount = Object.values(exam.reports).filter(r => r.category === 'In-Exam').length;
+  const postCount = Object.values(exam.reports).filter(r => r.category === 'Post-Exam').length;
+  const analyticCount = Object.values(exam.reports).filter(r => r.category === 'Analytics').length;
+  const rows = filteredReports.map(([name, info]) => {
+    const isGenerated = info.lastGenerated !== null;
+    const action = isGenerated
+      ? `<button class="btn btn-sm" onclick="downloadReport('${name}')"><i class="fas fa-download"></i> Download</button>`
+      : `<button class="btn btn-sm btn-primary" onclick="showActionModal('Generate ${name}','Generate the ${name.toLowerCase()} report for ${selectedReportsExam}?', {icon:'fa-magic', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>generateReport('${name}')})"><i class="fas fa-magic"></i> Generate</button>`;
+    const badgeClass = info.category === 'Pre-Exam' ? 'badge-info' : info.category === 'In-Exam' ? 'badge-warning' : info.category === 'Post-Exam' ? 'badge-success' : 'badge-neutral';
+    return `<tr><td>${name}</td><td><span class="badge ${badgeClass}">${info.category}</span></td><td>${info.lastGenerated || '—'}</td><td>${action}</td></tr>`;
+  }).join('');
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> Generate and export examination reports across all phases.</div>
       <div class="filter-bar">
-        <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
-        <select class="form-control"><option>All Phases</option><option>Pre-Exam</option><option>In-Exam</option><option>Post-Exam</option></select>
-        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showActionModal('Export PDF','All available reports for the selected exam and phase have been exported as a single PDF.', {icon:'fa-file-pdf', confirmLabel:'Download PDF', confirmIcon:'fa-download'})"><i class="fas fa-file-pdf"></i> Export PDF</button>
-        <button class="btn btn-sm" onclick="showActionModal('Export Excel','All available reports for the selected exam and phase have been exported to Excel.', {icon:'fa-file-excel', confirmLabel:'Download Excel', confirmIcon:'fa-download'})"><i class="fas fa-file-excel"></i> Export Excel</button>
+        <select class="form-control" onchange="changeReportsExam(this.value)">${examOptions}</select>
+        <select class="form-control" onchange="changeReportsPhase(this.value)">${phaseOptions}</select>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="exportReports('PDF')"><i class="fas fa-file-pdf"></i> Export PDF</button>
+        <button class="btn btn-sm" onclick="exportReports('Excel')"><i class="fas fa-file-excel"></i> Export Excel</button>
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card"><div class="label">Pre-Exam Reports</div><div class="value" style="font-size:16px">6</div><div class="sub">Eligibility, Registration, Timetable, Hall Ticket, Seating, Invigilator</div></div>
-        <div class="stat-card"><div class="label">In-Exam Reports</div><div class="value" style="font-size:16px">5</div><div class="sub">Attendance, Answer Sheet, Malpractice, D-Form, Collection</div></div>
-        <div class="stat-card"><div class="label">Post-Exam Reports</div><div class="value" style="font-size:16px">8</div><div class="sub">Bundle, Evaluator, Marks, Scrutiny, Result, Memo, Revaluation</div></div>
-        <div class="stat-card"><div class="label">Analytics</div><div class="value" style="font-size:16px">5</div><div class="sub">Pass/Fail, Backlog, Subject-wise, Toppers, Trend</div></div>
+        <div class="stat-card"><div class="label">Pre-Exam Reports</div><div class="value" style="font-size:16px">${preCount}</div><div class="sub">Eligibility, Registration, Timetable, Hall Ticket, Seating, Invigilator</div></div>
+        <div class="stat-card"><div class="label">In-Exam Reports</div><div class="value" style="font-size:16px">${inCount}</div><div class="sub">Attendance, Answer Sheet, Malpractice, D-Form, Collection</div></div>
+        <div class="stat-card"><div class="label">Post-Exam Reports</div><div class="value" style="font-size:16px">${postCount}</div><div class="sub">Bundle, Evaluator, Marks, Scrutiny, Result, Memo, Revaluation</div></div>
+        <div class="stat-card"><div class="label">Analytics</div><div class="value" style="font-size:16px">${analyticCount}</div><div class="sub">Pass/Fail, Backlog, Subject-wise, Toppers, Trend</div></div>
       </div>
 
       <div class="card">
@@ -584,18 +1299,7 @@ function renderReports() {
           <div class="table-wrap">
             <table>
               <tr><th>Report Name</th><th>Category</th><th>Last Generated</th><th></th></tr>
-              <tr><td>Eligible Student List</td><td><span class="badge badge-info">Pre-Exam</span></td><td>05 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Eligible Student List','Downloading the eligible student list report (last generated 05 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Registered Student List</td><td><span class="badge badge-info">Pre-Exam</span></td><td>06 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Registered Student List','Downloading the registered student list report (last generated 06 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Exam Timetable</td><td><span class="badge badge-info">Pre-Exam</span></td><td>07 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Exam Timetable','Downloading the exam timetable report (last generated 07 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Hall Ticket List</td><td><span class="badge badge-info">Pre-Exam</span></td><td>08 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Hall Ticket List','Downloading the hall ticket list report (last generated 08 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Seating Plan</td><td><span class="badge badge-info">Pre-Exam</span></td><td>08 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Seating Plan','Downloading the room-wise seating plan report (last generated 08 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Attendance Report (D-Form)</td><td><span class="badge badge-warning">In-Exam</span></td><td>10 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Attendance Report (D-Form)','Downloading the D-Form / attendance summary report (last generated 10 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Answer Sheet Report</td><td><span class="badge badge-warning">In-Exam</span></td><td>10 Apr 2026</td><td><button class="btn btn-sm" onclick="showActionModal('Answer Sheet Report','Downloading the answer sheet / booklet number report (last generated 10 Apr 2026).', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download</button></td></tr>
-              <tr><td>Bundle Summary</td><td><span class="badge badge-success">Post-Exam</span></td><td>—</td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Generate Bundle Summary','Generate a summary report of all answer sheet bundles and their evaluation status?', {icon:'fa-layer-group', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('reports')})">Generate</button></td></tr>
-              <tr><td>Marks Entry Status</td><td><span class="badge badge-success">Post-Exam</span></td><td>—</td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Generate Marks Entry Status','Generate a report showing marks entry completion status across all evaluators?', {icon:'fa-pencil-alt', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('reports')})">Generate</button></td></tr>
-              <tr><td>Result Summary</td><td><span class="badge badge-success">Post-Exam</span></td><td>—</td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Generate Result Summary','Generate a subject-wise and overall result summary report?', {icon:'fa-chart-bar', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('reports')})">Generate</button></td></tr>
-              <tr><td>Pass / Fail Analysis</td><td><span class="badge badge-neutral">Analytics</span></td><td>—</td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Generate Pass / Fail Analysis','Generate a pass/fail analysis report across all subjects?', {icon:'fa-chart-pie', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('reports')})">Generate</button></td></tr>
-              <tr><td>Backlog Report</td><td><span class="badge badge-neutral">Analytics</span></td><td>—</td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Generate Backlog Report','Generate a report listing all students with backlog/ATKT subjects?', {icon:'fa-list', confirmLabel:'Generate', confirmIcon:'fa-magic', onConfirm:()=>showPage('reports')})">Generate</button></td></tr>
+              ${rows || '<tr><td colspan="4" class="text-center text-muted" style="padding:20px">No reports found for the selected phase.</td></tr>'}
             </table>
           </div>
         </div>

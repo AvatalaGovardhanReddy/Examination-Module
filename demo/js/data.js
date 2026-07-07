@@ -78,4 +78,5 @@ const data = {
     { student: 'Divya Kulkarni', subject: 'SE', marks: 35, feePaid: true, uniStatus: 'Revised Result Received', uniStatusClass: 'badge-success', revised: '48' },
     { student: 'Vikram Singh', subject: 'Maths IV', marks: 28, feePaid: false, uniStatus: 'Fee Pending', uniStatusClass: 'badge-danger', revised: '—' },
   ],
+  memosGenerated: {},
 };
