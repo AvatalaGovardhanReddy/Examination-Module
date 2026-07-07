@@ -4,22 +4,27 @@
 // ============================================================
 
 function openRecordCaseModal() {
+  const studentOptions = data.students.map(s => `<option value="${s.name} (${s.id})">${s.name} (${s.id})</option>`).join('');
+  const subjectOptions = data.subjects.map(s => `<option>${s.name}</option>`).join('');
   openFormModal('Record Special Case', `
     <div class="form-group"><label>Student</label>
       <select class="form-control" id="newCaseStudent">
-        <option>Rohit Joshi (S007)</option>
-        <option>Ankit Tiwari (S011)</option>
+        ${studentOptions}
       </select>
     </div>
     <div class="form-group"><label>Subject</label>
       <select class="form-control" id="newCaseSubject">
-        <option>DS & Algorithms</option><option>DBMS</option><option>Operating Systems</option><option>Computer Networks</option><option>Software Engineering</option><option>Mathematics IV</option>
+        ${subjectOptions}
       </select>
     </div>
     <div class="form-group"><label>Case Type</label>
       <select class="form-control" id="newCaseType">
         <option>Malpractice</option><option>Court Case</option><option>Withheld Result</option><option>Blank Booklet</option><option>Mismatch</option><option>Other</option>
       </select>
+    </div>
+    <div class="form-group"><label>Supporting Proof</label>
+      <input type="file" class="form-control" id="newCaseProof">
+      <div class="text-muted" style="font-size:11px;margin-top:4px">Optional: attach image, PDF, statement or invigilator note.</div>
     </div>
     <div class="form-group"><label>Remarks</label>
       <textarea class="form-control" id="newCaseRemarks" rows="3" placeholder="Describe what happened"></textarea>
@@ -29,14 +34,24 @@ function openRecordCaseModal() {
     const subject = document.getElementById('newCaseSubject').value;
     const type = document.getElementById('newCaseType').value;
     const remarks = document.getElementById('newCaseRemarks').value.trim() || 'No remarks provided';
+    const proofInput = document.getElementById('newCaseProof');
+    const proofName = proofInput?.files?.[0]?.name || 'No proof attached';
     const typeClass = (type === 'Malpractice' || type === 'Court Case') ? 'badge-danger' : 'badge-warning';
+    const resultAction = getSpecialCaseResultAction(type);
     data.malpracticeCases.unshift({
-      date: 'Today', student, subject, type, typeClass,
-      remarks, status: 'Under Review', statusClass: 'badge-warning',
+      id: 'SC-' + String(data.malpracticeCases.length + 1).padStart(3, '0'),
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      student, subject, type, typeClass, remarks, proofName,
+      submittedBy: loggedInUser?.label || 'Invigilator',
+      submittedAt: new Date().toLocaleString(),
+      submittedToBranch: true,
+      status: 'Submitted to Exam Branch',
+      statusClass: 'badge-info',
+      resultAction,
     });
     closeModal();
     showPage('malpractice');
-    showToast('Case recorded for ' + student);
+    showToast('Special case submitted to Exam Branch for ' + student);
   });
 }
 
