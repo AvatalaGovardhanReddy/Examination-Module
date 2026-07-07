@@ -509,9 +509,11 @@ function renderResultDeclaration() {
 // ============================================================
 // MARKS MEMO
 // ============================================================
+const GRADE_POINTS = { 'A+': 10, 'A': 9, 'B+': 8, 'B': 7, 'C': 6, 'D': 5 };
+
 const memoExams = {
   'Sem IV Regular Apr 2026': {
-    label: 'Sem IV Regular Apr 2026', students: [
+    label: 'Sem IV Regular Apr 2026', semesterLabel: 'IV (Regular) — Apr 2026', students: [
       { id: 'S001', name: 'Aarav Sharma', program: 'B.E. Computer', sem: 'IV' },
       { id: 'S002', name: 'Priya Patel', program: 'B.E. Computer', sem: 'IV' },
       { id: 'S003', name: 'Rahul Verma', program: 'B.E. Computer', sem: 'IV' },
@@ -523,10 +525,18 @@ const memoExams = {
       { id: 'S009', name: 'Arjun Desai', program: 'B.E. Computer', sem: 'IV' },
       { id: 'S010', name: 'Divya Kulkarni', program: 'B.E. Computer', sem: 'IV' },
     ],
+    subjects: [
+      { code: 'CS401', name: 'Data Structures & Algorithms', credits: 4, grade: 'A' },
+      { code: 'CS402', name: 'Database Management Systems', credits: 4, grade: 'B+' },
+      { code: 'CS403', name: 'Operating Systems', credits: 3, grade: 'A' },
+      { code: 'CS404', name: 'Computer Networks', credits: 3, grade: 'B+' },
+      { code: 'CS405', name: 'Software Engineering', credits: 3, grade: 'A' },
+      { code: 'CS406', name: 'Mathematics IV', credits: 3, grade: 'B' },
+    ],
     memoPrefix: 'MM-2026-', startIdx: 0, baseSgpa: 7.5, baseCgpa: 7.2,
   },
   'Sem VI Regular Apr 2026': {
-    label: 'Sem VI Regular Apr 2026', students: [
+    label: 'Sem VI Regular Apr 2026', semesterLabel: 'VI (Regular) — Apr 2026', students: [
       { id: 'S011', name: 'Neha Sharma', program: 'B.E. Computer', sem: 'VI' },
       { id: 'S012', name: 'Aditya Verma', program: 'B.E. Computer', sem: 'VI' },
       { id: 'S013', name: 'Isha Patel', program: 'B.E. Computer', sem: 'VI' },
@@ -534,14 +544,28 @@ const memoExams = {
       { id: 'S015', name: 'Meera Iyer', program: 'B.E. Computer', sem: 'VI' },
       { id: 'S016', name: 'Rohit Deshmukh', program: 'B.E. Computer', sem: 'VI' },
     ],
+    subjects: [
+      { code: 'CS601', name: 'Machine Learning', credits: 4, grade: 'A' },
+      { code: 'CS602', name: 'Cloud Computing', credits: 4, grade: 'A' },
+      { code: 'CS603', name: 'Big Data Analytics', credits: 4, grade: 'B+' },
+      { code: 'CS604', name: 'Internet of Things', credits: 3, grade: 'A' },
+      { code: 'CS605', name: 'Deep Learning', credits: 3, grade: 'B+' },
+      { code: 'CS606', name: 'Blockchain Technology', credits: 3, grade: 'A' },
+    ],
     memoPrefix: 'MM-2026-2', startIdx: 0, baseSgpa: 8.2, baseCgpa: 8.0,
   },
   'Sem II Supplementary Jan 2026': {
-    label: 'Sem II Supplementary Jan 2026', students: [
+    label: 'Sem II Supplementary Jan 2026', semesterLabel: 'II (Supplementary) — Jan 2026', students: [
       { id: 'S017', name: 'Akash Tiwari', program: 'B.E. Computer', sem: 'II' },
       { id: 'S018', name: 'Pooja Reddy', program: 'B.E. Computer', sem: 'II' },
       { id: 'S019', name: 'Siddharth Nair', program: 'B.E. Computer', sem: 'II' },
       { id: 'S020', name: 'Tanvi Kulkarni', program: 'B.E. Computer', sem: 'II' },
+    ],
+    subjects: [
+      { code: 'MA201', name: 'Engineering Maths II', credits: 4, grade: 'B+' },
+      { code: 'CS201', name: 'Programming in C', credits: 4, grade: 'B+' },
+      { code: 'EC201', name: 'Digital Electronics', credits: 4, grade: 'B' },
+      { code: 'EE201', name: 'Basic Electrical Engg.', credits: 3, grade: 'B' },
     ],
     memoPrefix: 'MM-2026-S', startIdx: 0, baseSgpa: 6.8, baseCgpa: 6.5,
   },
@@ -566,7 +590,13 @@ function changeMemoExam(value) {
   }
 }
 
-function downloadMarksMemo(studentId, studentName, memoNo, sgpa, cgpa) {
+function downloadMarksMemo(studentId, studentName, memoNo, sgpa, cgpa, semesterLabel, subjects) {
+  semesterLabel = semesterLabel || 'IV (Regular) — Apr 2026';
+  subjects = subjects && subjects.length ? subjects : memoExams['Sem IV Regular Apr 2026'].subjects;
+  const subjectRows = subjects.map(sub =>
+    `<tr><td>${sub.code}</td><td>${sub.name}</td><td>${sub.credits}</td><td>${sub.grade}</td><td>${GRADE_POINTS[sub.grade] || '-'}</td></tr>`
+  ).join('');
+  const totalCredits = subjects.reduce((sum, sub) => sum + sub.credits, 0);
   const content = `
 <!DOCTYPE html>
 <html>
@@ -600,21 +630,16 @@ function downloadMarksMemo(studentId, studentName, memoNo, sgpa, cgpa) {
   <tr><td style="font-weight:600;width:140px">Student Name</td><td>${studentName}</td></tr>
   <tr><td style="font-weight:600">Student ID</td><td>${studentId}</td></tr>
   <tr><td style="font-weight:600">Program</td><td>B.E. Computer Engineering</td></tr>
-  <tr><td style="font-weight:600">Semester</td><td>IV (Regular) — Apr 2026</td></tr>
+  <tr><td style="font-weight:600">Semester</td><td>${semesterLabel}</td></tr>
   <tr><td style="font-weight:600">Memo Number</td><td>${memoNo}</td></tr>
 </table>
 <table>
   <tr><th>Subject Code</th><th>Subject Name</th><th>Credits</th><th>Grade</th><th>Grade Points</th></tr>
-  <tr><td>CS401</td><td>Data Structures & Algorithms</td><td>4</td><td>A</td><td>9</td></tr>
-  <tr><td>CS402</td><td>Database Management Systems</td><td>4</td><td>B+</td><td>8</td></tr>
-  <tr><td>CS403</td><td>Operating Systems</td><td>3</td><td>A</td><td>9</td></tr>
-  <tr><td>CS404</td><td>Computer Networks</td><td>3</td><td>B+</td><td>8</td></tr>
-  <tr><td>CS405</td><td>Software Engineering</td><td>3</td><td>A</td><td>9</td></tr>
-  <tr><td>CS406</td><td>Mathematics IV</td><td>3</td><td>B</td><td>7</td></tr>
+  ${subjectRows}
 </table>
 <table>
   <tr><td style="font-weight:600">SGPA</td><td>${sgpa}</td><td style="font-weight:600">CGPA</td><td>${cgpa}</td></tr>
-  <tr><td style="font-weight:600">Total Credits</td><td>20</td><td style="font-weight:600">Result</td><td>PASS</td></tr>
+  <tr><td style="font-weight:600">Total Credits</td><td>${totalCredits}</td><td style="font-weight:600">Result</td><td>PASS</td></tr>
 </table>
 <div class="signature">
   <div><div class="line">Class Coordinator</div></div>
@@ -644,7 +669,7 @@ function generateMarksMemo(studentId) {
   const sgpa = (exam.baseSgpa + (idx % 5) * 0.4).toFixed(1);
   const cgpa = (exam.baseCgpa + (idx % 5) * 0.35).toFixed(1);
   data.memosGenerated[memoExamKey(studentId)] = { memoNo, sgpa, cgpa, generatedAt: new Date().toISOString() };
-  downloadMarksMemo(studentId, st.name, memoNo, sgpa, cgpa);
+  downloadMarksMemo(studentId, st.name, memoNo, sgpa, cgpa, exam.semesterLabel, exam.subjects);
   showToast('Marks memo generated for ' + st.name);
   if (typeof renderCurrentPage === 'function') {
     renderCurrentPage();
@@ -670,11 +695,12 @@ function generateAllMemos() {
 }
 
 function downloadMemo(studentId) {
-  const st = getMemoExamConfig().students.find(s => s.id === studentId);
+  const exam = getMemoExamConfig();
+  const st = exam.students.find(s => s.id === studentId);
   if (!st) return;
   const gen = data.memosGenerated[memoExamKey(studentId)];
   if (!gen) return;
-  downloadMarksMemo(studentId, st.name, gen.memoNo, gen.sgpa, gen.cgpa);
+  downloadMarksMemo(studentId, st.name, gen.memoNo, gen.sgpa, gen.cgpa, exam.semesterLabel, exam.subjects);
 }
 
 function renderMarksMemo() {
@@ -1038,7 +1064,7 @@ function downloadStudentMarksMemo() {
     'Sem VI Regular Apr 2026': 'MM-2026-3',
   };
   const memoNo = (memoPrefixMap[selectedStudentSem] || 'MM-2026') + '-001';
-  downloadMarksMemo('S001', 'Aarav Sharma', memoNo, sem.sgpa, sem.cgpa);
+  downloadMarksMemo('S001', 'Aarav Sharma', memoNo, sem.sgpa, sem.cgpa, selectedStudentSem, sem.subjects);
 }
 
 const studentRevalApplications = [

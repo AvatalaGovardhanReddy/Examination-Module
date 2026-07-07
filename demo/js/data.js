@@ -2,17 +2,21 @@
 // DATA
 // ============================================================
 const data = {
+  // attendance/feeStatus back the Eligibility page's multi-reason checks
+  // (attendance shortage, fee pending, detained, inactive — spec 3.2).
   students: [
-    { id: 'S001', name: 'Aarav Sharma', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S002', name: 'Priya Patel', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S003', name: 'Rahul Verma', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S004', name: 'Sneha Reddy', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S005', name: 'Vikram Singh', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S006', name: 'Ananya Gupta', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S007', name: 'Rohit Joshi', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Detained' },
-    { id: 'S008', name: 'Kavita Nair', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S009', name: 'Arjun Desai', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
-    { id: 'S010', name: 'Divya Kulkarni', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active' },
+    { id: 'S001', name: 'Aarav Sharma', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 92, feeStatus: 'Paid' },
+    { id: 'S002', name: 'Priya Patel', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 88, feeStatus: 'Paid' },
+    { id: 'S003', name: 'Rahul Verma', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 81, feeStatus: 'Paid' },
+    { id: 'S004', name: 'Sneha Reddy', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 95, feeStatus: 'Paid' },
+    { id: 'S005', name: 'Vikram Singh', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 79, feeStatus: 'Paid' },
+    { id: 'S006', name: 'Ananya Gupta', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 90, feeStatus: 'Paid' },
+    { id: 'S007', name: 'Rohit Joshi', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Detained', attendance: 58, feeStatus: 'Paid' },
+    { id: 'S008', name: 'Kavita Nair', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 86, feeStatus: 'Paid' },
+    { id: 'S009', name: 'Arjun Desai', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 77, feeStatus: 'Paid' },
+    { id: 'S010', name: 'Divya Kulkarni', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 93, feeStatus: 'Paid' },
+    { id: 'S021', name: 'Sanjay Mehta', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Active', attendance: 84, feeStatus: 'Pending' },
+    { id: 'S022', name: 'Neha Kapoor', program: 'B.E. Computer', sem: 'IV', reg: '2022-24', status: 'Inactive', attendance: 80, feeStatus: 'Paid' },
   ],
   // verifiedSheets = answer sheets verified after Collection/Dispatch (In-Exam
   // 4.5), available for Bundle Creation to draw from ("Fetch Verified Answer

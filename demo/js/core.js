@@ -19,6 +19,11 @@ const pageTitles = {
 
 let currentPage = 'dashboard';
 let currentMode = 'autonomous';
+// Which exam (from Exam Creation's Recent Exams list) is currently "open" —
+// read by every Pre-Exam page's exam selector so opening a specific exam
+// actually carries its label across pages instead of everything showing the
+// same hardcoded exam regardless of what you clicked.
+let currentExamLabel = 'Sem IV Regular Apr 2026';
 
 const modeInfo = {
   autonomous: { label: 'Autonomous', icon: 'fa-university', desc: 'Full exam cycle managed by college' },
@@ -61,6 +66,21 @@ function goToPage(page, standaloneFile) {
     window.location.href = standaloneFile;
   }
   return false;
+}
+
+// Records which exam a Recent Exams row's "Open"/"View" action just jumped
+// to, so the destination page's exam selector shows that exam's label
+// instead of always showing the same hardcoded one. Call this immediately
+// before the existing showPage()/goToPage() navigation, not instead of it.
+function openExam(label) {
+  // Eligibility's manual overrides / approved-lock state are specific to
+  // whichever exam is open — switching exams should start from a clean
+  // slate, not carry over another exam's overrides or "approved" state.
+  if (label !== currentExamLabel && typeof eligibilityOverrides !== 'undefined') {
+    eligibilityOverrides = {};
+    eligibilityApproved = false;
+  }
+  currentExamLabel = label;
 }
 
 function renderAffiliatedNotApplicable(icon, title, message) {
