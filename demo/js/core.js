@@ -92,6 +92,45 @@ function openModal(title, bodyHtml, footerHtml) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
+// ============================================================
+// FILE DOWNLOAD — turns "Download" / "Export" buttons into real file saves.
+// Serializes the report table currently shown in #pageContent to CSV.
+// ============================================================
+function slugifyName(s) { return (s || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'report'; }
+function defaultReportName() { var h1 = document.querySelector('.topbar-left h1'); return slugifyName(h1 ? h1.textContent : 'report'); }
+function tableToCSV(table) {
+  return Array.from(table.rows).map(function (row) {
+    return Array.from(row.cells).map(function (cell) {
+      var t = (cell.innerText || cell.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/[",\n]/.test(t)) t = '"' + t.replace(/"/g, '""') + '"';
+      return t;
+    }).join(',');
+  }).join('\r\n');
+}
+function downloadBlob(filename, content, mime) {
+  var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+function downloadReport(name) {
+  var base = name || defaultReportName();
+  var container = document.getElementById('pageContent');
+  var table = container ? container.querySelector('table') : null;
+  if (table) { downloadBlob(base + '.csv', tableToCSV(table), 'text/csv;charset=utf-8'); showSuccessToast('Downloaded ' + base + '.csv'); }
+  else { downloadBlob(base + '.txt', base.replace(/-/g, ' ') + ' - generated ' + new Date().toLocaleString(), 'text/plain'); showSuccessToast('Downloaded ' + base + '.txt'); }
+}
+function showSuccessToast(msg) {
+  var toast = document.getElementById('demoToast');
+  if (!toast) { toast = document.createElement('div'); toast.id = 'demoToast'; toast.className = 'demo-toast'; document.body.appendChild(toast); }
+  toast.innerHTML = '<i class="fas fa-check-circle" style="color:#34d399"></i> ' + msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
+}
+
 // Builds modal content via DOM APIs (not HTML strings), so plain button
 // labels/messages never need HTML-attribute quote-escaping.
 function showActionModal(title, message, opts) {
@@ -140,7 +179,12 @@ function showActionModal(title, message, opts) {
     }
     confirmBtn.onclick = function () {
       closeModal();
-      if (opts.onConfirm) opts.onConfirm();
+      if (opts.onConfirm) { opts.onConfirm(); return; }
+      // A "Download"/"Export" confirm with no explicit action saves the report.
+      var lbl = opts.confirmLabel || '';
+      if (opts.confirmIcon === 'fa-download' || /download|export/i.test(lbl)) {
+        downloadReport(opts.downloadName);
+      }
     };
     footer.appendChild(confirmBtn);
   }

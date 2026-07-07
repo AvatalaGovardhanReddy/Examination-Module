@@ -645,6 +645,45 @@ function openModal(title, bodyHtml, footerHtml) {
 }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
+// ============================================================
+// FILE DOWNLOAD — turns "Download" / "Export" buttons into real file saves.
+// Serializes the report table currently shown in #pageContent to CSV.
+// ============================================================
+function slugifyName(s) { return (s || 'report').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'report'; }
+function defaultReportName() { var h1 = document.querySelector('.topbar-left h1'); return slugifyName(h1 ? h1.textContent : 'report'); }
+function tableToCSV(table) {
+  return Array.from(table.rows).map(function (row) {
+    return Array.from(row.cells).map(function (cell) {
+      var t = (cell.innerText || cell.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/[",\n]/.test(t)) t = '"' + t.replace(/"/g, '""') + '"';
+      return t;
+    }).join(',');
+  }).join('\r\n');
+}
+function downloadBlob(filename, content, mime) {
+  var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+function downloadVisibleReport(name) {
+  var base = name || defaultReportName();
+  var container = document.getElementById('pageContent');
+  var table = container ? container.querySelector('table') : null;
+  if (table) { downloadBlob(base + '.csv', tableToCSV(table), 'text/csv;charset=utf-8'); showSuccessToast('Downloaded ' + base + '.csv'); }
+  else { downloadBlob(base + '.txt', base.replace(/-/g, ' ') + ' - generated ' + new Date().toLocaleString(), 'text/plain'); showSuccessToast('Downloaded ' + base + '.txt'); }
+}
+function showSuccessToast(msg) {
+  var toast = document.getElementById('demoToast');
+  if (!toast) { toast = document.createElement('div'); toast.id = 'demoToast'; toast.className = 'demo-toast'; document.body.appendChild(toast); }
+  toast.innerHTML = '<i class="fas fa-check-circle" style="color:#34d399"></i> ' + msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function () { toast.classList.remove('show'); }, 2600);
+}
+
 // Builds modal content via DOM APIs (not HTML strings), so plain button
 // labels/messages never need HTML-attribute quote-escaping.
 function showActionModal(title, message, opts) {
@@ -693,7 +732,12 @@ function showActionModal(title, message, opts) {
     }
     confirmBtn.onclick = function () {
       closeModal();
-      if (opts.onConfirm) opts.onConfirm();
+      if (opts.onConfirm) { opts.onConfirm(); return; }
+      // A "Download"/"Export" confirm with no explicit action saves the report.
+      var lbl = opts.confirmLabel || '';
+      if (opts.confirmIcon === 'fa-download' || /download|export/i.test(lbl)) {
+        downloadVisibleReport(opts.downloadName);
+      }
     };
     footer.appendChild(confirmBtn);
   }
@@ -1108,7 +1152,7 @@ function renderExamCreation() {
           </div>
           <div class="flex-between mt-2">
             <span class="text-muted" style="font-size:13px">Selected: <strong id="modeDisplay">${modeInfo[currentMode].label}</strong> — ${modeInfo[currentMode].desc}</span>
-            <button class="btn btn-primary btn-lg" onclick="openModal('Exam Created Successfully','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px\\'>Exam Created Successfully</h3><p class=\\'text-muted\\'>Semester IV Regular Exam (2025-26) has been created and is ready for activation.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;eligibility&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Eligibility</button>')"><i class="fas fa-check"></i> Create & Activate Exam</button>
+            <button class="btn btn-primary btn-lg" onclick="openModal('Exam Created Successfully','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px\\'>Exam Created Successfully</h3><p class=\\'text-muted\\'>Semester IV Regular Exam (2025-26) has been created and is ready for activation.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'eligibility\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Eligibility</button>')"><i class="fas fa-check"></i> Create & Activate Exam</button>
           </div>
         </div>
       </div>
@@ -1193,8 +1237,8 @@ function renderRegistration() {
     ? `<button class="btn btn-sm" onclick="showActionModal('Export to University','Exam form data for all 248 registered students has been exported for university submission.', {icon:'fa-file-export', confirmLabel:'Download File', confirmIcon:'fa-download'})"><i class="fas fa-file-export"></i> Export to University</button><button class="btn btn-sm" onclick="showActionModal('Import University List','Select the university-approved student list file to import and map to registered students.', {icon:'fa-file-import', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-file-import"></i> Import University List</button>`
     : '';
   const headerButton = isAffiliated
-    ? `<button class="btn btn-success btn-sm" onclick="openModal('University List Imported','<p>University-approved registered list imported and mapped to 248 students.</p>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;timetable&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Timetable</button>')"><i class="fas fa-file-import"></i> Import University List</button>`
-    : `<button class="btn btn-success btn-sm" onclick="openModal('Registration Complete','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>All students registered successfully</h3><p class=\\'text-muted\\'>248 students approved. Ready for timetable scheduling.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;timetable&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Timetable</button>')"><i class="fas fa-check"></i> Final Approve All</button>`;
+    ? `<button class="btn btn-success btn-sm" onclick="openModal('University List Imported','<p>University-approved registered list imported and mapped to 248 students.</p>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'timetable\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Timetable</button>')"><i class="fas fa-file-import"></i> Import University List</button>`
+    : `<button class="btn btn-success btn-sm" onclick="openModal('Registration Complete','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>All students registered successfully</h3><p class=\\'text-muted\\'>248 students approved. Ready for timetable scheduling.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'timetable\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Timetable</button>')"><i class="fas fa-check"></i> Final Approve All</button>`;
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
@@ -1276,7 +1320,7 @@ function renderHallTicket() {
       ? 'Hybrid: Generate hall tickets in ERP for internal subjects; import university hall ticket data for external subjects.'
       : 'Autonomous: Generate hall ticket numbers and PDFs directly in ERP. Supports QR/barcode.';
   const generateBtn = !isAffiliated
-    ? `<button class="btn btn-primary btn-sm" onclick="openModal('Generate All Hall Tickets','<p>Generate hall tickets for all 248 registered students? This will create hall ticket numbers and PDFs.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'><i class=\\'fas fa-check\\'></i> Generate All</button>')"><i class="fas fa-magic"></i> Generate All</button>`
+    ? `<button class="btn btn-primary btn-sm" onclick="showActionModal('Generate All Hall Tickets','Generate hall tickets for all 248 registered students? This will create hall ticket numbers and PDFs.', {icon:'fa-magic', confirmLabel:'Generate All', confirmIcon:'fa-check'})"><i class="fas fa-magic"></i> Generate All</button>`
     : '';
   const importBtn = currentMode !== 'autonomous'
     ? `<button class="btn ${isAffiliated?'btn-primary':''} btn-sm" onclick="showActionModal('Import University Hall Tickets','Select the university-provided hall ticket file (PDFs or numbers) to import and map to students.', {icon:'fa-upload', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-upload"></i> Import University Hall Tickets</button>`
@@ -1360,7 +1404,7 @@ function renderInvigilator() {
               <tr><td>Lab 102</td><td>DS & Algorithms</td><td>Prof. Amit Kumar</td><td>F02</td><td><span class="badge badge-success">Confirmed</span></td><td><button class="btn btn-sm btn-danger" onclick="showActionModal('Unassign Invigilator','Remove Prof. Amit Kumar from Lab 102 duty for this session?', {icon:'fa-user-minus', iconColor:'var(--danger)', confirmLabel:'Unassign', confirmClass:'btn-danger', confirmIcon:'fa-user-minus', onConfirm:()=>showPage('invigilator')})">Unassign</button></td></tr>
               <tr><td>Lecture Hall A</td><td>DS & Algorithms</td><td>Dr. Sunita Rao</td><td>F03</td><td><span class="badge badge-success">Confirmed</span></td><td><button class="btn btn-sm btn-danger" onclick="showActionModal('Unassign Invigilator','Remove Dr. Sunita Rao from Lecture Hall A duty for this session?', {icon:'fa-user-minus', iconColor:'var(--danger)', confirmLabel:'Unassign', confirmClass:'btn-danger', confirmIcon:'fa-user-minus', onConfirm:()=>showPage('invigilator')})">Unassign</button></td></tr>
               <tr><td>Lecture Hall B</td><td>DS & Algorithms</td><td>Prof. Rajesh Pillai</td><td>F04</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-sm btn-danger" onclick="showActionModal('Unassign Invigilator','Remove Prof. Rajesh Pillai from Lecture Hall B duty for this session?', {icon:'fa-user-minus', iconColor:'var(--danger)', confirmLabel:'Unassign', confirmClass:'btn-danger', confirmIcon:'fa-user-minus', onConfirm:()=>showPage('invigilator')})">Unassign</button></td></tr>
-              <tr><td>Seminar Hall</td><td>DS & Algorithms</td><td>—</td><td>—</td><td><span class="badge badge-danger">Not Assigned</span></td><td><button class="btn btn-sm btn-primary" onclick="openModal('Assign Invigilator','<div class=\\'form-group\\'><label>Select Faculty</label><select class=\\'form-control\\'><option>Dr. Neha Shah</option><option>Prof. Rajesh Pillai</option></select></div>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'>Assign</button>')">Assign</button></td></tr>
+              <tr><td>Seminar Hall</td><td>DS & Algorithms</td><td>—</td><td>—</td><td><span class="badge badge-danger">Not Assigned</span></td><td><button class="btn btn-sm btn-primary" onclick="showActionModal('Assign Invigilator','Assign an available faculty member as invigilator for this room and session.', {icon:'fa-user-plus', confirmLabel:'Assign', confirmIcon:'fa-check'})">Assign</button></td></tr>
             </table>
           </div>
         </div>
@@ -1381,10 +1425,10 @@ function renderAttendance() {
         <select class="form-control"><option>10 Apr 2026 - Morning</option></select>
         <select class="form-control"><option>Lab 101 - DS & Algorithms</option></select>
         <span class="chip"><i class="fas fa-user-check" style="color:#059669"></i> 30 Present</span>
-        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openModal('Attendance Submitted','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Attendance Submitted Successfully</h3><p class=\\'text-muted\\'>Room Lab 101 attendance has been recorded. Waiting for Exam Branch verification.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'>OK</button>')"><i class="fas fa-check"></i> Submit Attendance</button>
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="showActionModal('Attendance Submitted','Room Lab 101 attendance has been recorded. Waiting for Exam Branch verification.', {icon:'fa-check-circle', iconColor:'#059669', confirmLabel:'OK', confirmIcon:'fa-check'})"><i class="fas fa-check"></i> Submit Attendance</button>
       </div>
       <div class="card">
-        <div class="card-header"><h3><i class="fas fa-clipboard-list"></i> Room Lab 101 - Student Attendance</h3><div class="flex gap-2"><button class="btn btn-sm btn-success" onclick="openModal('Attendance Verified & Locked','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-lock\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Attendance Locked</h3><p class=\\'text-muted\\'>Verified by Exam Branch. Ready for D-Form generation.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;dform&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Generate D-Form</button>')"><i class="fas fa-lock"></i> Verify & Lock</button></div></div>
+        <div class="card-header"><h3><i class="fas fa-clipboard-list"></i> Room Lab 101 - Student Attendance</h3><div class="flex gap-2"><button class="btn btn-sm btn-success" onclick="openModal('Attendance Verified & Locked','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-lock\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Attendance Locked</h3><p class=\\'text-muted\\'>Verified by Exam Branch. Ready for D-Form generation.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'dform\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Generate D-Form</button>')"><i class="fas fa-lock"></i> Verify & Lock</button></div></div>
         <div class="card-body">
           <div class="table-wrap">
             <table>
@@ -1466,7 +1510,7 @@ function renderDForm() {
       <div class="filter-bar">
         <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
         <select class="form-control"><option>10 Apr 2026 - DS & Algorithms</option></select>
-        <button class="btn btn-primary btn-sm" onclick="openModal('D-Form Generated','<p>D-Form has been generated. You can download it below.</p>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'><i class=\\'fas fa-download\\'></i> Download D-Form</button>')"><i class="fas fa-file-alt"></i> Generate D-Form</button>
+        <button class="btn btn-primary btn-sm" onclick="showActionModal('D-Form Generated','D-Form has been generated. You can download it below.', {icon:'fa-file-alt', confirmLabel:'Download D-Form', confirmIcon:'fa-download'})"><i class="fas fa-file-alt"></i> Generate D-Form</button>
         <button class="btn btn-sm" onclick="showActionModal('Lock Attendance','Lock attendance records for all 6 subjects? Once locked, attendance cannot be edited without proper authorization.', {icon:'fa-lock', confirmLabel:'Lock', confirmIcon:'fa-lock', onConfirm:()=>showPage('dform')})"><i class="fas fa-lock"></i> Lock Attendance</button>
         <button class="btn btn-sm" style="margin-left:auto" onclick="showActionModal('Download Report','The D-Form / attendance summary report has been downloaded.', {icon:'fa-download', confirmLabel:'Download', confirmIcon:'fa-download'})"><i class="fas fa-download"></i> Download Report</button>
       </div>
@@ -1506,7 +1550,7 @@ function renderCollection() {
     : 'Verify answer sheet collection matches attendance, then move to bundle creation for evaluation.';
   const verifyBtn = isAffiliated
     ? `<button class="btn btn-primary btn-sm" onclick="openModal('Collection Verified','<p>Answer sheets verified against attendance. Proceed to generate the dispatch report for the university.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'><i class=\\'fas fa-truck\\'></i> Generate Dispatch Report</button>')"><i class="fas fa-check"></i> Verify Collection</button>`
-    : `<button class="btn btn-primary btn-sm" onclick="openModal('Collection Verified','<p>Answer sheets verified. Proceeding to bundle creation for evaluation.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;bundle&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Bundle Creation</button>')"><i class="fas fa-check"></i> Verify Collection</button>`;
+    : `<button class="btn btn-primary btn-sm" onclick="openModal('Collection Verified','<p>Answer sheets verified. Proceeding to bundle creation for evaluation.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'bundle\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Bundle Creation</button>')"><i class="fas fa-check"></i> Verify Collection</button>`;
   return `
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${modeAlert}</div>
@@ -2029,9 +2073,9 @@ function renderConsolidation() {
     <div class="page-content">
       <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${alertLine}</div>
       <div class="filter-bar">
-        <select class="form-control" onchange="changeConsolidationExam(this.value)">${examOptions}</select>
-        ${session.live ? importBtn : ''}
-        ${session.live ? `<button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openModal('All Marks Validated','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>All Marks Validated & Locked</h3><p class=\\'text-muted\\'>All components verified. Ready for result processing.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;result-processing&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Result Processing</button>')"><i class="fas fa-lock"></i> Validate & Lock All</button>` : ''}
+        <select class="form-control"><option>Sem IV Regular Apr 2026</option></select>
+        ${importBtn}
+        <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openModal('All Marks Validated','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>All Marks Validated & Locked</h3><p class=\\'text-muted\\'>All components verified. Ready for result processing.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'result-processing\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Proceed to Result Processing</button>')"><i class="fas fa-lock"></i> Validate & Lock All</button>
       </div>
       <div class="card">
         <div class="card-header"><h3><i class="fas fa-layer-group"></i> Marks Consolidation Status</h3></div>
@@ -2055,11 +2099,11 @@ function renderResultProcessing() {
   const m = modeInfo[currentMode];
   let actionBlock;
   if (currentMode === 'autonomous') {
-    actionBlock = `<button class="btn btn-primary" onclick="openModal('Process Results','<p>Process results for all 248 students? This will calculate pass/fail, SGPA/CGPA based on locked marks and grading rules.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;result-freeze&quot;)\\'><i class=\\'fas fa-calculator\\'></i> Process Results</button>')"><i class="fas fa-cogs"></i> Calculate Results</button>`;
+    actionBlock = `<button class="btn btn-primary" onclick="openModal('Process Results','<p>Process results for all 248 students? This will calculate pass/fail, SGPA/CGPA based on locked marks and grading rules.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'result-freeze\\')\\'><i class=\\'fas fa-calculator\\'></i> Process Results</button>')"><i class="fas fa-cogs"></i> Calculate Results</button>`;
   } else if (currentMode === 'affiliated') {
-    actionBlock = `<button class="btn btn-primary" onclick="openModal('Import University Result','<div class=\\'form-group\\'><label>University Result File</label><input type=\\'file\\' class=\\'form-control\\'></div><p>Import and map the university result file to students and subjects.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;result-freeze&quot;)\\'><i class=\\'fas fa-file-import\\'></i> Import Result</button>')"><i class="fas fa-file-import"></i> Import University Result</button>`;
+    actionBlock = `<button class="btn btn-primary" onclick="openModal('Import University Result','<div class=\\'form-group\\'><label>University Result File</label><input type=\\'file\\' class=\\'form-control\\'></div><p>Import and map the university result file to students and subjects.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'result-freeze\\')\\'><i class=\\'fas fa-file-import\\'></i> Import Result</button>')"><i class="fas fa-file-import"></i> Import University Result</button>`;
   } else {
-    actionBlock = `<button class="btn btn-primary" onclick="openModal('Process Results','<p>Calculate internal/practical results in ERP and combine with the imported university external result.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;result-freeze&quot;)\\'><i class=\\'fas fa-calculator\\'></i> Calculate & Combine</button>')"><i class="fas fa-cogs"></i> Calculate Results</button><button class="btn btn-sm" onclick="showActionModal('Import University External Result','Select the university external result file to import and combine with college-calculated internal/practical marks.', {icon:'fa-file-import', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-file-import"></i> Import University External Result</button>`;
+    actionBlock = `<button class="btn btn-primary" onclick="openModal('Process Results','<p>Calculate internal/practical results in ERP and combine with the imported university external result.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'result-freeze\\')\\'><i class=\\'fas fa-calculator\\'></i> Calculate & Combine</button>')"><i class="fas fa-cogs"></i> Calculate Results</button><button class="btn btn-sm" onclick="showActionModal('Import University External Result','Select the university external result file to import and combine with college-calculated internal/practical marks.', {icon:'fa-file-import', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-file-import"></i> Import University External Result</button>`;
   }
   const modeAlert = currentMode === 'autonomous'
     ? '<strong>Autonomous Mode:</strong> Calculating results in ERP based on locked marks.'
@@ -2113,7 +2157,7 @@ function renderResultFreeze() {
         <div class="stat-card"><div class="label">Withheld</div><div class="value" style="color:var(--warning)">2</div><div class="sub">Under review</div></div>
       </div>
       <div class="card mt-2">
-        <div class="card-header"><h3><i class="fas fa-clipboard-check"></i> Result Review</h3><div class="flex gap-2"><button class="btn btn-sm" onclick="showActionModal('Apply Moderation','Apply grace marks or moderation rules across subjects before freezing the result? This adjusts borderline pass/fail cases per institution policy.', {icon:'fa-gavel', confirmLabel:'Apply Moderation', confirmIcon:'fa-gavel', onConfirm:()=>showPage('result-freeze')})"><i class="fas fa-gavel"></i> Apply Moderation</button><button class="btn btn-success" onclick="openModal('Freeze Result','<div class=\\'text-center\\'><i class=\\'fas fa-exclamation-triangle\\' style=\\'font-size:48px;color:#d97706\\'></i><h3 style=\\'margin-top:12px'>Confirm Result Freeze</h3><p>Once frozen, results cannot be modified without proper authorization. Are you sure?</p></div>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-success\\' onclick=\\'closeModal();showPage(&quot;result-declaration&quot;)\\'><i class=\\'fas fa-lock\\'></i> Freeze Result</button>')"><i class="fas fa-lock"></i> Freeze Result</button></div></div>
+        <div class="card-header"><h3><i class="fas fa-clipboard-check"></i> Result Review</h3><div class="flex gap-2"><button class="btn btn-sm" onclick="showActionModal('Apply Moderation','Apply grace marks or moderation rules across subjects before freezing the result? This adjusts borderline pass/fail cases per institution policy.', {icon:'fa-gavel', confirmLabel:'Apply Moderation', confirmIcon:'fa-gavel', onConfirm:()=>showPage('result-freeze')})"><i class="fas fa-gavel"></i> Apply Moderation</button><button class="btn btn-success" onclick="openModal('Freeze Result','<div class=\\'text-center\\'><i class=\\'fas fa-exclamation-triangle\\' style=\\'font-size:48px;color:#d97706\\'></i><h3 style=\\'margin-top:12px'>Confirm Result Freeze</h3><p>Once frozen, results cannot be modified without proper authorization. Are you sure?</p></div>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-success\\' onclick=\\'closeModal();showPage(\\'result-declaration\\')\\'><i class=\\'fas fa-lock\\'></i> Freeze Result</button>')"><i class="fas fa-lock"></i> Freeze Result</button></div></div>
         <div class="card-body">
           <div class="table-wrap">
             <table>
@@ -2147,7 +2191,7 @@ function renderResultDeclaration() {
     <div class="page-content">
       <div class="alert alert-success"><i class="fas fa-check-circle"></i> ${modeAlert}</div>
       <div class="card">
-        <div class="card-header"><h3><i class="fas fa-bullhorn"></i> Result Declaration</h3><div class="flex gap-2"><button class="btn btn-success btn-lg" onclick="openModal('Result Declared','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Result Published Successfully</h3><p class=\\'text-muted\\'>Results are now live on the student portal. Notifications sent.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(&quot;marks-memo&quot;)\\'><i class=\\'fas fa-arrow-right\\'></i> Generate Marks Memo</button>')"><i class="fas fa-globe"></i> Publish Result</button></div></div>
+        <div class="card-header"><h3><i class="fas fa-bullhorn"></i> Result Declaration</h3><div class="flex gap-2"><button class="btn btn-success btn-lg" onclick="openModal('Result Declared','<div class=\\'text-center\\' style=\\'padding:20px\\'><i class=\\'fas fa-check-circle\\' style=\\'font-size:48px;color:#059669\\'></i><h3 style=\\'margin-top:12px'>Result Published Successfully</h3><p class=\\'text-muted\\'>Results are now live on the student portal. Notifications sent.</p></div>','<button class=\\'btn btn-primary\\' onclick=\\'closeModal();showPage(\\'marks-memo\\')\\'><i class=\\'fas fa-arrow-right\\'></i> Generate Marks Memo</button>')"><i class="fas fa-globe"></i> Publish Result</button></div></div>
         <div class="card-body">
           <div class="alert alert-info"><i class="fas fa-info-circle"></i> ${publishHint}</div>
           <div class="stats-grid" style="margin-bottom:0">
@@ -2334,7 +2378,7 @@ function renderMarksMemo() {
       : 'Generate memos in ERP for internal/practical exams; upload the university memo for external subjects.';
   const exam = getMemoExamConfig();
   const generateBtn = !isAffiliated
-    ? `<button class="btn btn-primary btn-sm" onclick="openModal('Generate All Memos','<p>Generate official marks memos for all ${exam.students.length} students? This will create PDFs with memo numbers, QR codes, and digital signatures.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal();generateAllMemos()\\'><i class=\\'fas fa-magic\\'></i> Generate All</button>')"><i class="fas fa-magic"></i> Generate All Memos</button>`
+    ? `<button class="btn btn-primary btn-sm" onclick="openModal('Generate All Memos','<p>Generate official marks memos for all 248 students? This will create PDFs with memo numbers, QR codes, and digital signatures.</p>','<button class=\\'btn\\' onclick=\\'closeModal()\\'>Cancel</button><button class=\\'btn btn-primary\\' onclick=\\'closeModal()\\'>Generate All</button>')"><i class="fas fa-magic"></i> Generate All Memos</button>`
     : '';
   const uploadBtn = !isAutonomous
     ? `<button class="btn ${isAffiliated?'btn-primary':''} btn-sm" onclick="showActionModal('Upload University Memo','Select the university-issued marks memo file to upload and map to students.', {icon:'fa-upload', confirmLabel:'Choose File', confirmIcon:'fa-upload'})"><i class="fas fa-upload"></i> Upload University Memo</button>`
