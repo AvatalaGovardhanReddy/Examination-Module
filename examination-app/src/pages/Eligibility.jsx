@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout.jsx'
 import Card from '../components/ui/Card.jsx'
@@ -7,7 +7,6 @@ import Badge from '../components/ui/Badge.jsx'
 import { useToast } from '../components/ui/Toast.jsx'
 import { useExam } from '../context/ExamContext.jsx'
 import {
-  activeExam,
   eligibilityRules,
   students,
   subjectWiseEligibility,
@@ -15,7 +14,7 @@ import {
 } from '../data/mockData.js'
 
 export default function Eligibility() {
-  const { mode } = useExam()
+  const { mode, activeExam } = useExam()
   const toast = useToast()
   const navigate = useNavigate()
   const [selected, setSelected] = useState(() =>

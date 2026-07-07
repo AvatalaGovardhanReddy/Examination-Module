@@ -1,3 +1,4 @@
+import React from 'react'
 // Generic modal dialog. Render conditionally: {open && <Modal .../>}
 // `footer` is optional JSX for the action buttons.
 export default function Modal({ title, onClose, children, footer }) {

@@ -1,10 +1,11 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout.jsx'
 import Card from '../components/ui/Card.jsx'
 import Alert from '../components/ui/Alert.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import { useExam, MODES } from '../context/ExamContext.jsx'
-import { activeExam, preExamWorkflow, subjectWiseEligibility } from '../data/mockData.js'
+import { preExamWorkflow, subjectWiseEligibility } from '../data/mockData.js'
 
 const sourceReadiness = [
   { label: 'Student master', detail: 'ERP course registration synced', icon: 'fa-user-graduate', state: 'Ready' },
@@ -20,7 +21,7 @@ const modeNotes = {
 }
 
 export default function Overview() {
-  const { mode, setMode, modeInfo } = useExam()
+  const { mode, setMode, modeInfo, activeExam } = useExam()
 
   return (
     <Layout title="Pre-Exam Command Center" breadcrumb="Overview">
@@ -134,7 +135,7 @@ export default function Overview() {
           </div>
           <div className="label">Seating Capacity</div>
           <div className="value">260</div>
-          <div className="sub">248 seats allocated across {activeExam.rooms} rooms</div>
+          <div className="sub">{activeExam.totalStudents} seats allocated across {activeExam.rooms} rooms</div>
         </div>
       </div>
 

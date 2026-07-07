@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback } from 'react'
 
 // Lightweight toast system so button clicks give visible feedback.
 // Usage: const toast = useToast(); toast('Saved!')
